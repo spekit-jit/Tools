@@ -6,45 +6,31 @@
 <title>Tiny Tools · Staging</title>
 <meta name="color-scheme" content="light dark" />
 <style>
-  :root{
-    --bg:#0f1220; --panel:#14182a; --ink:#e9ecf8; --muted:#9aa3bf;
-    --radius:16px; --shadow:0 16px 40px rgba(0,0,0,.38);
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-  }
-  @media (prefers-color-scheme: light){
-    :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1426; --muted:#596486; --shadow:0 18px 40px rgba(12,24,60,.08); }
-  }
+  :root{--bg:#0f1220;--panel:#14182a;--ink:#e9ecf8;--muted:#9aa3bf;--radius:16px;--shadow:0 16px 40px rgba(0,0,0,.38);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+  @media (prefers-color-scheme: light){:root{--bg:#f6f7fb;--panel:#fff;--ink:#0f1426;--muted:#596486;--shadow:0 18px 40px rgba(12,24,60,.08)}}
   *{box-sizing:border-box}
-  body{
-    margin:0; font-family:var(--font); color:var(--ink);
-    background:
-      radial-gradient(1200px 520px at 0% -10%, rgba(110,86,207,.25), transparent 60%),
-      radial-gradient(900px 360px at 110% 0%, rgba(69,231,179,.20), transparent 60%),
-      var(--bg);
-  }
-  header{padding:28px 18px;border-bottom:1px solid rgba(255,255,255,.08);
-    background:linear-gradient(180deg, rgba(255,255,255,.03), transparent)}
+  body{margin:0;font-family:var(--font);color:var(--ink);background:
+    radial-gradient(1200px 520px at 0% -10%, rgba(110,86,207,.25), transparent 60%),
+    radial-gradient(900px 360px at 110% 0%, rgba(69,231,179,.20), transparent 60%),
+    var(--bg)}
+  header{padding:28px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(255,255,255,.03), transparent)}
   .wrap{max-width:980px;margin:0 auto;padding:0 14px}
   h1{margin:0 0 8px;font-size:22px;letter-spacing:.2px}
   .sub{margin:0;color:var(--muted);font-size:13px}
   main{padding:22px}
-  .board{background:var(--panel); border:1px solid rgba(255,255,255,.08);
-    border-radius:18px; box-shadow:var(--shadow); padding:18px}
+  .board{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:var(--shadow);padding:18px}
   .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
-  @media (max-width:880px){ .grid{grid-template-columns:repeat(8,1fr)} }
-  @media (max-width:600px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:880px){.grid{grid-template-columns:repeat(8,1fr)}}
+  @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
   a.tool{
-    grid-column: span 3;
-    display:inline-flex; align-items:center; justify-content:center;
-    text-decoration:none; text-align:center; padding:14px 12px; min-height:56px;
-    border-radius:14px; color:#fff; font-weight:700; letter-spacing:.2px;
-    border:1px solid rgba(255,255,255,.12); box-shadow:0 12px 26px rgba(0,0,0,.25);
-    transition:transform .06s ease, box-shadow .12s ease, filter .12s ease;
-    word-break:break-word; backdrop-filter:saturate(110%);
+    grid-column:span 3;display:inline-flex;align-items:center;justify-content:center;
+    text-decoration:none;text-align:center;padding:14px 12px;min-height:56px;border-radius:14px;
+    color:#fff;font-weight:700;letter-spacing:.2px;border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 12px 26px rgba(0,0,0,.25);transition:transform .06s,box-shadow .12s;word-break:break-word;backdrop-filter:saturate(110%)
   }
-  @media (max-width:880px){ a.tool{grid-column:span 4} }
-  @media (max-width:600px){ a.tool{grid-column:span 2} }
-  a.tool:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.3) }
+  @media (max-width:880px){a.tool{grid-column:span 4}}
+  @media (max-width:600px){a.tool{grid-column:span 2}}
+  a.tool:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(0,0,0,.3)}
   .empty{margin-top:10px;padding:14px;border:1px dashed rgba(255,255,255,.18);border-radius:12px;color:var(--muted);text-align:center}
   footer{padding:16px;color:var(--muted);font-size:12px}
 </style>
@@ -53,7 +39,7 @@
 <header>
   <div class="wrap">
     <h1>Tiny Tools · Staging</h1>
-    <p class="sub">Auto-buttons for every <code>.html</code> in <code>/tools</code>. Click to open in a new tab.</p>
+    <p class="sub">Auto-buttons for every <code>.html</code> directly in <code>/tools</code>. Click to open in a new tab.</p>
   </div>
 </header>
 
@@ -65,87 +51,76 @@
 </main>
 
 <footer class="wrap">
-  If your repo is private or API-limited, add <code>/tools/tools.json</code> with a list of file paths (e.g., <code>["demo.html","app.html"]</code>).
+  If your repo is private or API-limited, add <code>/tools/tools.json</code> with an array of filenames (e.g., <code>["dealrooms.html","meeting.html"]</code>).
 </footer>
 
 <script>
-/* ===== helpers ===== */
 const grid = document.getElementById("grid");
 const empty = document.getElementById("empty");
 
-// Determine owner/repo for user vs project sites.
-// For your final URL (spekit-jit.github.io/tools), this resolves to repo "spekit-jit.github.io".
+/* ---------- FIXED: correct repo detection for user site ---------- */
 function parseOwnerRepo(){
-  const owner = location.hostname.split(".")[0];
-  const parts = location.pathname.split("/").filter(Boolean);
-  const isProject = parts.length && parts[0] !== ""; // if there’s a repo segment
-  const repo = parts.length ? parts[0] : `${owner}.github.io`;
-  return {owner, repo};
+  const owner = location.hostname.split(".")[0];           // "spekit-jit"
+  const parts = location.pathname.split("/").filter(Boolean); // ["tools"] on user site
+  const userRepo = `${owner}.github.io`;                   // "spekit-jit.github.io"
+  // If first path segment is literally "tools" (or nothing), it's a USER site.
+  const repo = (parts.length === 0 || parts[0] === "tools") ? userRepo : parts[0];
+  return { owner, repo };
 }
 
 function toHref(rel){
-  // Build absolute URL from a relative file under /tools/
   const base = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^\/]*$/, '/');
   return new URL(rel, location.origin + base).toString();
 }
 
-// Deterministic color + emoji per file
+// deterministic color + emoji per file
 function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function hueFromName(name){ return (hash(name) % 360); }
 function emojiFor(name){
-  const emojis = ["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"];
+  const emojis=["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"];
   return emojis[ hash(name) % emojis.length ];
 }
-
-function titleFromPath(p){ return p.split("/").pop(); } // filename only
-
-function buttonFor(fileName){
-  const hue = hueFromName(fileName);
-  const bg1 = `hsl(${hue} 75% 46%)`, bg2 = `hsl(${(hue+24)%360} 78% 44%)`;
-  const a = document.createElement("a");
-  a.className = "tool";
-  a.href = toHref(fileName);
-  a.target = "_blank"; a.rel = "noopener";
-  a.style.background = `linear-gradient(180deg, ${bg1}, ${bg2})`;
-  a.textContent = titleFromPath(fileName) + " " + emojiFor(fileName);
+function btn(fileName){
+  const hue=hueFromName(fileName);
+  const bg1=`hsl(${hue} 75% 46%)`, bg2=`hsl(${(hue+24)%360} 78% 44%)`;
+  const a=document.createElement("a");
+  a.className="tool"; a.href=toHref(fileName); a.target="_blank"; a.rel="noopener";
+  a.style.background=`linear-gradient(180deg, ${bg1}, ${bg2})`;
+  a.textContent = fileName + " " + emojiFor(fileName);
   a.title = fileName;
   return a;
 }
-
 function render(files){
-  grid.innerHTML = "";
-  const htmlFiles = files.filter(n => /\.html?$/i.test(n));
-  if(!htmlFiles.length){ empty.style.display = "block"; return; }
-  empty.style.display = "none";
-  htmlFiles.sort((a,b)=>a.localeCompare(b)).forEach(n => grid.appendChild(buttonFor(n)));
+  grid.innerHTML="";
+  const htmlFiles = files.filter(n=>/\.html?$/i.test(n));
+  if(!htmlFiles.length){ empty.style.display="block"; return; }
+  empty.style.display="none";
+  htmlFiles.sort((a,b)=>a.localeCompare(b)).forEach(n=>grid.appendChild(btn(n)));
 }
 
-/* ===== data sources ===== */
+/* ---------- data sources ---------- */
 async function listViaGitHubAPI(){
   const {owner, repo} = parseOwnerRepo();
   const api = `https://api.github.com/repos/${owner}/${repo}/contents/tools`;
   const res = await fetch(api, {cache:"no-store"});
   if(!res.ok) throw new Error(res.status+" "+res.statusText);
   const data = await res.json();
-  // Only files directly under /tools
-  return data.filter(x => x.type==="file").map(x => x.name);
+  return data.filter(x=>x.type==="file").map(x=>x.name);
 }
-
 async function listViaManifest(){
   try{
     const res = await fetch("./tools.json", {cache:"no-store"});
     if(!res.ok) return null;
     const arr = await res.json();
-    return arr.map(x => (typeof x==="string" ? x : x.path)).filter(Boolean);
+    return arr.map(x=> typeof x==="string" ? x : x.path).filter(Boolean);
   }catch{ return null; }
 }
 
-/* ===== boot ===== */
+/* ---------- boot ---------- */
 (async function(){
   let files = [];
-  try{
-    files = await listViaGitHubAPI();
-  }catch(e){
+  try { files = await listViaGitHubAPI(); }
+  catch {
     const manifest = await listViaManifest();
     if(manifest) files = manifest;
   }
