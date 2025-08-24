@@ -2,253 +2,564 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Content Mapping</title>
-<meta name="color-scheme" content="light dark" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Topic Mapper — Responsive</title>
 <style>
   :root{
-    --bg:#0f1220; --panel:#121527; --ink:#eef1ff; --muted:#9aa3bf;
-    --accent:#6E56CF; --accent2:#45E7B3; --ring:rgba(255,255,255,.25);
-    --radius:14px; --shadow:0 18px 44px rgba(0,0,0,.35);
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+    /* Global theme (tweak freely or brand to Spekit) */
+    --bg: #fafafa;
+    --panel: #ffffff;
+    --text: #111;
+    --muted: #666;
+    --accent: #6a5cff;   /* primary */
+    --accent-2: #ff7a59; /* secondary */
+    --node-fill: #fff;
+    --node-stroke: #e2e2e2;
+    --node-parent: #eef0ff;
+    --node-child: #fff9ef;
+    --edge: #c7c7d0;
+    --edge-active: var(--accent);
+    --shadow: 0 4px 14px rgba(0,0,0,.08);
+    --radius: 14px;
+    --pad: 14px;
+    --font: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
-  @media (prefers-color-scheme: light){
-    :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1528; --muted:#5b668a; --ring:rgba(0,0,0,.18) }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg: #0f1115;
+      --panel: #141821;
+      --text: #f2f4f8;
+      --muted: #9aa3b2;
+      --accent: #8f88ff;
+      --accent-2: #ffa37f;
+      --node-fill: #1a2030;
+      --node-stroke: #283047;
+      --node-parent: #1d2440;
+      --node-child: #221e18;
+      --edge: #34405f;
+      --edge-active: #a7a2ff;
+      --shadow: 0 6px 16px rgba(0,0,0,.35);
+    }
   }
-  *{box-sizing:border-box}
-  html,body{height:100%}
+
+  html, body { height: 100%; }
   body{
-    margin:0; font-family:var(--font); color:var(--ink);
-    background:
-      radial-gradient(900px 420px at 0% -10%, rgba(110,86,207,.25), transparent 55%),
-      radial-gradient(800px 360px at 110% 0%, rgba(69,231,179,.20), transparent 55%),
-      var(--bg);
-    display:flex; align-items:stretch; justify-content:center;
-  }
-  .wrap{
-    width:100%; max-width:1100px; padding:18px; margin:10px;
-    background:var(--panel); border:1px solid rgba(255,255,255,.08);
-    border-radius:18px; box-shadow:var(--shadow);
+    margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
+    display:flex; flex-direction:column; min-height:100%;
   }
 
-  /* Header */
-  .bar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px}
-  .ghost{appearance:none;border:1px solid var(--ring);background:transparent;color:var(--ink);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer}
-  .primary{appearance:none;border:1px solid var(--ring);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 24px rgba(110,86,207,.35)}
-  .ghost:hover,.primary:hover{filter:brightness(1.05)}
+  .toolbar{
+    position:sticky; top:0; z-index:10; background:var(--panel); box-shadow:var(--shadow);
+    display:flex; gap:8px; align-items:center; padding:10px 12px; flex-wrap:wrap;
+  }
+  .toolbar .title{ font-weight:600; margin-right:auto; letter-spacing:.2px; }
+  button, label.btn{
+    appearance:none; border:1px solid var(--node-stroke); background:var(--panel); color:var(--text);
+    border-radius:10px; padding:8px 12px; cursor:pointer; font:inherit;
+  }
+  button.primary{ background:var(--accent); color:white; border-color:transparent; }
+  button:hover{ filter:brightness(1.03); }
+  button:disabled{ opacity:.5; cursor:not-allowed; }
+  input[type="file"]{ display:none; }
 
-  /* Parent topic row */
-  .parent{
-    background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
-    border:1px solid rgba(255,255,255,.12);
-    border-radius:14px; padding:14px; margin:12px 0;
+  .stage-wrap{
+    position:relative; flex:1 1 auto; min-height:0; /* allow SVG to fill */
   }
-  .parent-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
-  .btn{
-    display:inline-flex; align-items:center; gap:8px; padding:10px 12px; min-height:44px;
-    border-radius:12px; border:1px solid rgba(255,255,255,.15);
-    color:#fff; font-weight:800; text-decoration:none; cursor:text;
-    box-shadow:0 12px 24px rgba(0,0,0,.25);
-    outline:none;
+  svg#stage{
+    width:100%; height:100%; display:block; touch-action:none; background:
+      radial-gradient(transparent 3px, transparent 3px) 0 0/40px 40px,
+      radial-gradient(transparent 3px, transparent 3px) 20px 20px/40px 40px,
+      linear-gradient(to bottom, transparent, transparent);
   }
-  .btn.small{
-    min-height:38px; padding:8px 10px; font-weight:700;
-  }
-  .btn[contenteditable="true"]{
-    caret-color:currentColor;
-  }
-  .btn:focus{
-    box-shadow:0 0 0 3px var(--ring), 0 12px 24px rgba(0,0,0,.25);
-  }
-  .act{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:40px; height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.15);
-    background:#1a1f3a; color:#fff; cursor:pointer; font-weight:900;
-  }
-  .act:hover{filter:brightness(1.05)}
-  .act-row{display:flex; gap:8px; align-items:center}
 
-  /* Subtopic grid under each parent */
-  .subs{ margin-top:12px; display:grid; grid-auto-rows:auto; gap:8px }
-  .subs-row{ display:grid; grid-auto-flow:column; gap:8px; align-items:start }
-  .chip{
-    display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
-    background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
-    border:1px solid rgba(255,255,255,.12); padding:6px; border-radius:12px;
+  /* Node visuals (SVG elements) */
+  .node > rect{
+    fill:var(--node-fill);
+    stroke:var(--node-stroke);
+    stroke-width:1.5;
+    rx:12; ry:12;
+    filter:drop-shadow(0 3px 6px rgba(0,0,0,.08));
   }
-  .chip .btn{ flex:1; min-width:120px }
-  .chip .mini{
-    display:inline-flex; align-items:center; justify-content:center;
-    width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
-    background:#171b33; color:#fff; cursor:pointer; font-weight:900;
-  }
-  .mini:hover{filter:brightness(1.07)}
+  .node.parent > rect{ fill:var(--node-parent); }
+  .node.child  > rect{ fill:var(--node-child); }
+  .node.selected > rect{ stroke:var(--accent); stroke-width:2; }
 
-  .tiny{color:var(--muted); font-size:12px; margin-top:6px}
+  .edge{ stroke:var(--edge); stroke-width:2; }
+  .edge.active{ stroke:var(--edge-active); stroke-dasharray:4 4; }
+
+  .label{
+    font-size:14px; fill:var(--text);
+    user-select:none; pointer-events:none;
+  }
+
+  /* Inline editor overlay (HTML on top of SVG) */
+  .editor{
+    position:absolute; z-index:20; background:var(--panel); color:var(--text);
+    border:1px solid var(--node-stroke); border-radius:10px; padding:8px 10px; min-width:160px;
+    box-shadow:var(--shadow); outline:none;
+  }
+
+  .hint{
+    position:absolute; right:10px; bottom:10px; opacity:.75; font-size:12px; color:var(--muted);
+    background:var(--panel); padding:6px 8px; border-radius:8px; border:1px solid var(--node-stroke);
+  }
+
+  /* Utility */
+  .spacer{ flex:1; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="bar">
-    <button id="addParent" class="primary">+ Add parent topic</button>
-    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map">📋 Export</button>
+  <div class="toolbar">
+    <div class="title">Topic Mapper</div>
+    <button id="addParent" class="primary">Add Topic</button>
+    <button id="addChild" disabled>Add Subtopic</button>
+    <button id="connect" disabled>Connect</button>
+    <button id="zoomFit">Zoom to Fit</button>
+    <button id="reset">Reset</button>
+    <div class="spacer"></div>
+    <button id="exportBtn">Export</button>
+    <label class="btn" for="importFile">Import</label>
+    <input id="importFile" type="file" accept="application/json" />
   </div>
-  <div id="board"></div>
-  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic below. Sub-topic arrows add to the ← left, → right, or ⬇ bottom (new row).</div>
-</div>
+
+  <div class="stage-wrap">
+    <svg id="stage" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+      <g id="edges"></g>
+      <g id="nodes"></g>
+    </svg>
+    <div class="hint">Tip: Double-click a node to rename. Drag to move. Tap empty space to clear selection.</div>
+  </div>
 
 <script>
-/* ============ Color utilities (deterministic per element) ============ */
-function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
-function hueFrom(s){ return hash(s) % 360; }
-function colorFor(key, lighten=0){
-  const h = hueFrom(key);
-  const l1 = 48 + lighten, l2 = 42 + lighten;
-  return `linear-gradient(180deg, hsl(${h} 75% ${l1}%), hsl(${(h+22)%360} 82% ${l2}%))`;
-}
+(() => {
+  /* ===============================
+     Minimal graph state + helpers
+  =================================*/
+  const stage = document.getElementById('stage');
+  const gNodes = document.getElementById('nodes');
+  const gEdges = document.getElementById('edges');
 
-/* ============ DOM helpers ============ */
-function makeEditablePill(text, key, small=false){
-  const el = document.createElement('div');
-  el.className = 'btn' + (small ? ' small' : '');
-  el.contentEditable = 'true';
-  el.spellcheck = false;
-  el.textContent = text;
-  el.style.background = colorFor(key, small?0:0);
-  el.addEventListener('focus', () => {
-    if((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text){
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      const sel = window.getSelection();
-      sel.removeAllRanges(); sel.addRange(range);
+  const btnAddParent = document.getElementById('addParent');
+  const btnAddChild  = document.getElementById('addChild');
+  const btnConnect   = document.getElementById('connect');
+  const btnZoomFit   = document.getElementById('zoomFit');
+  const btnReset     = document.getElementById('reset');
+  const btnExport    = document.getElementById('exportBtn');
+  const fileImport   = document.getElementById('importFile');
+
+  const PADDING_X = 14, PADDING_Y = 10, MIN_W = 120, MIN_H = 40;
+
+  let nodes = [];   // {id,x,y,w,h,text,type,parentId?}
+  let edges = [];   // {id, a, b}
+  let selectedId = null;
+  let isConnecting = false;
+  let connectAnchor = null;
+
+  const id = () => Math.random().toString(36).slice(2,9);
+
+  const findNode = nid => nodes.find(n => n.id === nid);
+  const edgeEl = eid => document.getElementById('edge-'+eid);
+  const nodeEl = nid => document.getElementById('node-'+nid);
+
+  /* ===============================
+     SVG <g class="node"> builder
+  =================================*/
+  function buildNode(n){
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.classList.add('node', n.type);
+    g.setAttribute('id','node-'+n.id);
+    g.setAttribute('transform', `translate(${n.x},${n.y})`);
+    g.setAttribute('data-id', n.id);
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    rect.setAttribute('width', n.w);
+    rect.setAttribute('height', n.h);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.classList.add('label');
+    text.setAttribute('x', n.w/2);
+    text.setAttribute('y', n.h/2);
+    text.setAttribute('dominant-baseline', 'middle');
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = n.text;
+
+    g.appendChild(rect);
+    g.appendChild(text);
+    attachNodeEvents(g);
+
+    return g;
+  }
+
+  function drawNode(n){
+    const existing = nodeEl(n.id);
+    const g = existing || buildNode(n);
+    if(!existing) gNodes.appendChild(g);
+    // Update geometry
+    g.setAttribute('transform',`translate(${n.x},${n.y})`);
+    const rect = g.querySelector('rect');
+    rect.setAttribute('width', n.w);
+    rect.setAttribute('height', n.h);
+    const label = g.querySelector('text');
+    label.setAttribute('x', n.w/2);
+    label.setAttribute('y', n.h/2);
+    label.textContent = n.text;
+    g.classList.toggle('selected', selectedId === n.id);
+  }
+
+  function drawEdge(e){
+    let path = edgeEl(e.id);
+    if(!path){
+      path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.classList.add('edge');
+      path.setAttribute('id','edge-'+e.id);
+      gEdges.appendChild(path);
     }
-  });
-  el.addEventListener('keydown', (e)=>{
-    if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
-  });
-  return el;
-}
+    const a = findNode(e.a), b = findNode(e.b);
+    if(!a || !b) return;
+    const ax = a.x + a.w/2, ay = a.y + a.h/2;
+    const bx = b.x + b.w/2, by = b.y + b.h/2;
+    // Smooth-ish curved line
+    const dx = (bx-ax)/2;
+    const d = `M ${ax} ${ay} C ${ax+dx} ${ay}, ${bx-dx} ${by}, ${bx} ${by}`;
+    path.setAttribute('d', d);
+  }
 
-/* ============ Model ============ */
-let parentId = 0;
-function newParentModel(){
-  return { id: `p${++parentId}`, title: 'parent topic', rows: [] };
-}
-function newSubModel(){
-  return { id: `s${Math.random().toString(36).slice(2,8)}`, title: 'sub-topic' };
-}
+  function redraw(){
+    edges.forEach(drawEdge);
+    nodes.forEach(drawNode);
+    fitViewBoxToContent();
+    persist();
+    updateButtons();
+  }
 
-/* ============ Renderers ============ */
-const board = document.getElementById('board');
+  /* ===============================
+     Autosize label => node box
+  =================================*/
+  function autosizeNode(n){
+    // Temporarily render the label to measure
+    let ghost = document.getElementById('ghost-measure');
+    if(!ghost){
+      ghost = document.createElementNS('http://www.w3.org/2000/svg','text');
+      ghost.setAttribute('id','ghost-measure');
+      ghost.setAttribute('class','label');
+      ghost.setAttribute('visibility','hidden');
+      stage.appendChild(ghost);
+    }
+    ghost.textContent = n.text || ' ';
+    const bb = ghost.getBBox();
+    n.w = Math.max(MIN_W, Math.ceil(bb.width + PADDING_X*2));
+    n.h = Math.max(MIN_H, Math.ceil(bb.height + PADDING_Y*2));
+  }
 
-function renderParent(model){
-  const wrap = document.createElement('section');
-  wrap.className = 'parent';
-  wrap.dataset.pid = model.id;
+  /* ===============================
+     ViewBox auto-fit to content
+  =================================*/
+  function fitViewBoxToContent(pad=80){
+    if(nodes.length===0){
+      stage.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight-64}`);
+      return;
+    }
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    for(const n of nodes){
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.w);
+      maxY = Math.max(maxY, n.y + n.h);
+    }
+    minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    const vbW = Math.max(320, maxX - minX);
+    const vbH = Math.max(240, maxY - minY);
+    stage.setAttribute('viewBox', `${minX} ${minY} ${vbW} ${vbH}`);
+  }
 
-  const head = document.createElement('div');
-  head.className = 'parent-head';
+  /* ===============================
+     Selection + editor
+  =================================*/
+  function select(nid){
+    selectedId = nid;
+    updateButtons();
+    redraw();
+  }
+  function clearSelection(){
+    selectedId = null;
+    isConnecting = false;
+    connectAnchor = null;
+    updateButtons();
+    redraw();
+  }
+  function updateButtons(){
+    const hasSel = !!selectedId;
+    btnAddChild.disabled = !hasSel;
+    btnConnect.disabled = !hasSel;
+  }
 
-  const pill = makeEditablePill(model.title, model.id);
-  pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'parent topic');
-  head.appendChild(pill);
+  // Inline editor (HTML overlay) placed above node center
+  function editNode(n){
+    const wrap = document.querySelector('.stage-wrap');
+    const editor = document.createElement('textarea');
+    editor.className = 'editor';
+    editor.value = n.text;
+    wrap.appendChild(editor);
 
-  const addSub = document.createElement('button');
-  addSub.className = 'act';
-  addSub.title = 'Add sub-topic below';
-  addSub.textContent = '+';
-  addSub.addEventListener('click', ()=>{
-    if(model.rows.length === 0) model.rows.push([]);
-    const rowIndex = model.rows.length - 1;
-    model.rows[rowIndex].push(newSubModel());
-    renderSubs();
-  });
-  head.appendChild(addSub);
+    // Position editor using SVG -> screen coords
+    const pt = stage.createSVGPoint();
+    pt.x = n.x + n.w/2; pt.y = n.y + n.h/2;
+    const ctm = stage.getScreenCTM();
+    const sp = pt.matrixTransform(ctm);
+    const approxW = Math.max(180, n.w + 20);
+    const approxH = Math.max(48, n.h + 10);
+    editor.style.left = (sp.x - approxW/2) + 'px';
+    editor.style.top  = (sp.y - approxH/2) + 'px';
+    editor.style.width = approxW + 'px';
+    editor.style.height = approxH + 'px';
 
-  const subs = document.createElement('div');
-  subs.className = 'subs';
+    editor.focus();
+    editor.setSelectionRange(0, editor.value.length);
 
-  function renderSubs(){
-    subs.innerHTML = '';
-    model.rows.forEach((row, rIndex)=>{
-      const rowEl = document.createElement('div');
-      rowEl.className = 'subs-row';
-      row.forEach((sub, cIndex)=>{
-        const chip = document.createElement('div');
-        chip.className = 'chip';
+    const commit = () => {
+      n.text = editor.value.trim() || 'Topic';
+      autosizeNode(n);
+      wrap.removeChild(editor);
+      redraw();
+    };
+    const cancel = () => {
+      wrap.removeChild(editor);
+      redraw();
+    };
 
-        const sp = makeEditablePill(sub.title, sub.id, true);
-        sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'sub-topic');
-        chip.appendChild(sp);
+    editor.addEventListener('keydown', (e)=>{
+      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); commit(); }
+      if(e.key === 'Escape'){ e.preventDefault(); cancel(); }
+    });
+    editor.addEventListener('blur', commit, {once:true});
+  }
 
-        const left = document.createElement('button');
-        left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
-        left.addEventListener('click', ()=>{
-          row.splice(cIndex, 0, newSubModel());
-          renderSubs();
-        });
+  /* ===============================
+     Node interactivity (drag, dblclick)
+  =================================*/
+  function attachNodeEvents(g){
+    let dragging = false;
+    let start = {x:0,y:0}; let orig = {x:0,y:0};
+    const nid = g.getAttribute('data-id');
 
-        const right = document.createElement('button');
-        right.className = 'mini'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
-        right.addEventListener('click', ()=>{
-          row.splice(cIndex+1, 0, newSubModel());
-          renderSubs();
-        });
+    g.addEventListener('pointerdown', (e)=>{
+      e.preventDefault();
+      g.setPointerCapture(e.pointerId);
+      dragging = true;
+      const n = findNode(nid);
+      select(nid);
+      start = {x: e.clientX, y: e.clientY};
+      orig  = {x: n.x, y: n.y};
+    });
 
-        const down = document.createElement('button');
-        down.className = 'mini'; down.title = 'Add sub-topic on a new row below'; down.textContent = '⬇';
-        down.addEventListener('click', ()=>{
-          const newRow = [newSubModel()];
-          model.rows.splice(rIndex+1, 0, newRow);
-          renderSubs();
-        });
+    g.addEventListener('pointermove', (e)=>{
+      if(!dragging) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
 
-        chip.append(left, right, down);
-        rowEl.appendChild(chip);
-      });
-      subs.appendChild(rowEl);
+      // Convert screen delta to SVG units
+      const inv = stage.getScreenCTM().inverse();
+      const p0 = stage.createSVGPoint(); p0.x = 0; p0.y = 0;
+      const p1 = stage.createSVGPoint(); p1.x = dx; p1.y = dy;
+      const s0 = p0.matrixTransform(inv);
+      const s1 = p1.matrixTransform(inv);
+      const sdx = s1.x - s0.x, sdy = s1.y - s0.y;
+
+      const n = findNode(nid);
+      n.x = orig.x + sdx;
+      n.y = orig.y + sdy;
+      drawNode(n);
+      edges.forEach(e => (e.a===nid || e.b===nid) && drawEdge(e));
+      fitViewBoxToContent(); // keep everything visible while dragging
+    });
+
+    const endDrag = (e)=>{
+      if(!dragging) return;
+      dragging = false;
+      g.releasePointerCapture(e.pointerId);
+      persist(); // save position
+    };
+    g.addEventListener('pointerup', endDrag);
+    g.addEventListener('pointercancel', endDrag);
+
+    g.addEventListener('dblclick', (e)=>{
+      e.preventDefault();
+      const n = findNode(nid);
+      editNode(n);
+    });
+
+    // Support connect mode: first click = anchor, second = make edge
+    g.addEventListener('click', (e)=>{
+      if(!isConnecting) return;
+      const targetId = nid;
+      if(connectAnchor && connectAnchor !== targetId){
+        addEdge(connectAnchor, targetId);
+        isConnecting = false; connectAnchor = null;
+        redraw();
+      } else {
+        connectAnchor = targetId;
+        highlightConnecting(true, targetId);
+      }
+      e.stopPropagation();
     });
   }
 
-  renderSubs();
-  wrap.append(head, subs);
-  return wrap;
-}
+  function highlightConnecting(active, targetId=null){
+    // Visual hint by toggling an "active" class on all edges
+    [...gEdges.children].forEach(p => p.classList.toggle('active', active));
+    // Also bump the selected node stroke to accent (already done by .selected)
+    if(targetId){
+      const g = nodeEl(targetId);
+      if(g) g.classList.add('selected');
+    }
+  }
 
-function addParent(){
-  const model = newParentModel();
-  model.rows = [[]];
-  const node = renderParent(model);
-  board.appendChild(node);
-  const pill = node.querySelector('.btn');
-  pill.focus();
-}
+  /* ===============================
+     Graph ops
+  =================================*/
+  function addNode({text='Topic', x=0, y=0, type='parent', parentId=null}={}){
+    const n = { id: id(), text, x, y, w:MIN_W, h:MIN_H, type, parentId };
+    autosizeNode(n);
+    nodes.push(n);
+    drawNode(n);
+    select(n.id);
+    fitViewBoxToContent();
+    persist();
+    return n;
+  }
 
-/* ============ Export ============ */
-function exportJSON(){
-  const data = [];
-  board.querySelectorAll('.parent').forEach(parent=>{
-    const title = parent.querySelector('.btn').textContent.trim();
-    const rows = [];
-    parent.querySelectorAll('.subs-row').forEach(row=>{
-      const items = Array.from(row.querySelectorAll('.btn.small')).map(b=> b.textContent.trim());
-      if(items.length) rows.push(items);
+  function addSubtopic(anchorId){
+    const anchor = findNode(anchorId);
+    if(!anchor) return;
+    const child = addNode({
+      text:'Subtopic',
+      x: anchor.x + anchor.w + 80,
+      y: anchor.y,
+      type:'child',
+      parentId: anchor.id
     });
-    data.push({ title, rows });
-  });
-  const blob = new Blob([JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'content-map.json';
-  document.body.appendChild(a); a.click();
-  setTimeout(()=> URL.revokeObjectURL(a.href), 800);
-  a.remove();
-}
+    addEdge(anchor.id, child.id);
+    return child;
+  }
 
-/* ============ Wire up ============ */
-document.getElementById('addParent').addEventListener('click', addParent);
-document.getElementById('exportBtn').addEventListener('click', exportJSON);
-addParent(); // start with one parent
+  function addEdge(a,b){
+    // prevent duplicate/loop edges
+    if(a===b) return;
+    if(edges.some(e => (e.a===a && e.b===b) || (e.a===b && e.b===a))) return;
+    const e = { id:id(), a, b };
+    edges.push(e);
+    drawEdge(e);
+    persist();
+  }
+
+  function removeAll(){
+    nodes = []; edges = [];
+    gNodes.innerHTML = ''; gEdges.innerHTML = '';
+    clearSelection();
+    redraw();
+  }
+
+  /* ===============================
+     Storage + import/export
+  =================================*/
+  const LS_KEY = 'topic-mapper-v2';
+  function persist(){
+    try{
+      localStorage.setItem(LS_KEY, JSON.stringify({nodes, edges}));
+    }catch{}
+  }
+  function restore(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if(!raw) return;
+      const parsed = JSON.parse(raw);
+      if(parsed?.nodes && parsed?.edges){
+        nodes = parsed.nodes; edges = parsed.edges;
+      }
+    }catch{}
+  }
+
+  function exportJSON(){
+    const blob = new Blob([JSON.stringify({nodes, edges}, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'topic-map.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  }
+
+  function importJSON(file){
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(reader.result);
+        if(Array.isArray(data.nodes) && Array.isArray(data.edges)){
+          nodes = data.nodes; edges = data.edges;
+          gNodes.innerHTML=''; gEdges.innerHTML='';
+          nodes.forEach(drawNode); edges.forEach(drawEdge);
+          clearSelection(); fitViewBoxToContent(); persist();
+        }
+      }catch(e){ alert('Invalid JSON'); }
+    };
+    reader.readAsText(file);
+  }
+
+  /* ===============================
+     Stage events (background)
+  =================================*/
+  stage.addEventListener('click', (e)=>{
+    // click on empty space clears selection
+    if(e.target === stage) clearSelection();
+  });
+
+  // Enable connect mode toggle
+  btnConnect.addEventListener('click', ()=>{
+    isConnecting = !isConnecting;
+    connectAnchor = isConnecting ? selectedId : null;
+    highlightConnecting(isConnecting, connectAnchor);
+  });
+
+  // Toolbar hooks
+  btnAddParent.addEventListener('click', ()=>{
+    // place in the center of current viewBox
+    const vb = stage.viewBox.baseVal;
+    const n = addNode({ x: vb.x + vb.width/2 - MIN_W/2, y: vb.y + vb.height/2 - MIN_H/2, type:'parent' });
+    editNode(n); // encourage immediate naming
+  });
+  btnAddChild.addEventListener('click', ()=>{
+    if(!selectedId) return;
+    const c = addSubtopic(selectedId);
+    editNode(c);
+  });
+  btnZoomFit.addEventListener('click', ()=> fitViewBoxToContent(80));
+  btnReset.addEventListener('click', ()=>{
+    if(confirm('Clear the map?')) removeAll();
+  });
+
+  btnExport.addEventListener('click', exportJSON);
+  fileImport.addEventListener('change', (e)=>{
+    const f = e.target.files?.[0]; if(f) importJSON(f);
+    fileImport.value = '';
+  });
+
+  // Recompute viewBox on resize (keeps “fit” feel on orientation changes)
+  window.addEventListener('resize', ()=> fitViewBoxToContent());
+
+  /* ===============================
+     Init
+  =================================*/
+  restore();
+  if(nodes.length===0){
+    const root = addNode({text:'Main Topic', x:0, y:0, type:'parent'});
+    addSubtopic(root.id);
+  }else{
+    // Draw existing
+    nodes.forEach(drawNode);
+    edges.forEach(drawEdge);
+    fitViewBoxToContent();
+  }
+
+})();
 </script>
 </body>
 </html>
