@@ -39,64 +39,88 @@
 <body>
   <div class="board">
     <div id="grid" class="grid"></div>
-    <div id="stamp" class="tiny"></div>
+    <div id="status" class="tiny"></div>
   </div>
 
 <script>
-/* ---- config ---- */
+/* ==================== CONFIG ==================== */
 const OWNER = "spekit-jit";
 const REPO  = "spekit-jit.github.io";
 const API   = `https://api.github.com/repos/${OWNER}/${REPO}/contents/tools`;
-const LOCAL_INDEX = "./index-data.json"; // preferred source
+const LOCAL_INDEX = "./index-data.json"; // preferred
+const LOCAL_LEGACY = "./tools.json";     // legacy fallback (array of filenames)
 
-/* DOM */
-const grid  = document.getElementById("grid");
-const stamp = document.getElementById("stamp");
+/* LAST-DITCH INLINE LIST (edit this if everything else fails) */
+const INLINE_FILES = [
+  // "dealrooms.html", "meeting.html", "spekit-content-strategy.html"
+];
 
-/* helpers */
+/* ==================== DOM ==================== */
+const grid   = document.getElementById("grid");
+const status = document.getElementById("status");
+
+/* ==================== HELPERS ==================== */
 function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function hueFromName(name){ return hash(name)%360; }
 function emojiFor(name){ const e=["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"]; return e[ hash(name)%e.length ]; }
 function stripExt(s){ return s.replace(/\.html?$/i,''); }
+function linkHref(file){ return `${location.origin}/tools/${encodeURIComponent(file).replace(/%2F/gi,'/')}`; } // keep subpaths if any
 function makeLink(file){
   const hue=hueFromName(file);
   const a=document.createElement("a");
-  a.className="tool"; a.href=`${location.origin}/tools/${file}`; a.target="_blank"; a.rel="noopener";
+  a.className="tool"; a.href=linkHref(file); a.target="_blank"; a.rel="noopener";
   a.style.background=`linear-gradient(180deg, hsl(${hue} 75% 46%), hsl(${(hue+24)%360} 78% 44%))`;
   a.textContent = stripExt(file) + " " + emojiFor(file); a.title=file;
   return a;
 }
-function render(files, updated){
-  grid.innerHTML="";
-  files.filter(n=>/\.html?$/i.test(n))
-       .filter(n=>!/^index\.html?$/i.test(n))
-       .sort((a,b)=>a.localeCompare(b))
-       .forEach(n=>grid.appendChild(makeLink(n)));
-  stamp.textContent = updated ? `Last updated: ${updated}` : "";
+function render(files, source, updated){
+  grid.innerHTML = "";
+  const list = (files||[])
+    .filter(n => /\.html?$/i.test(n))
+    .filter(n => !/^index\.html?$/i.test(n))
+    .sort((a,b)=>a.localeCompare(b));
+  list.forEach(n => grid.appendChild(makeLink(n)));
+  status.textContent = `${list.length} file(s) • ${source}` + (updated ? ` • ${updated}` : "");
 }
 
-/* sources */
-async function fromLocal(){
-  const res = await fetch(LOCAL_INDEX+"?cb="+Date.now(),{cache:"no-store"});
-  if(!res.ok) throw new Error("no local");
+/* ==================== SOURCES ==================== */
+async function fromLocalIndex(){
+  const res = await fetch(LOCAL_INDEX+"?cb="+Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error("local "+res.status);
   const data = await res.json();
-  // Accept BOTH shapes: array or {files, updated}
-  if (Array.isArray(data)) return { files: data, updated: null };
-  if (data && Array.isArray(data.files)) return { files: data.files, updated: data.updated || null };
-  throw new Error("bad format");
+  if (Array.isArray(data)) return { files:data, updated:null, source:"index-data.json[array]" };
+  if (data && Array.isArray(data.files)) return { files:data.files, updated:data.updated||null, source:"index-data.json" };
+  throw new Error("local bad shape");
+}
+async function fromLegacy(){
+  const res = await fetch(LOCAL_LEGACY+"?cb="+Date.now(), {cache:"no-store"});
+  if(!res.ok) throw new Error("legacy "+res.status);
+  const arr = await res.json();
+  if (!Array.isArray(arr)) throw new Error("legacy bad shape");
+  return { files:arr, updated:null, source:"tools.json" };
 }
 async function fromAPI(){
-  const res = await fetch(API+"?cb="+Date.now(),{cache:"no-store"});
+  const res = await fetch(API+"?cb="+Date.now(), {cache:"no-store"});
   if(!res.ok) throw new Error("api "+res.status);
   const data = await res.json();
-  return { files:data.filter(x=>x.type==="file").map(x=>x.name), updated:null };
+  const files = data.filter(x=>x.type==="file").map(x=>x.name);
+  return { files, updated:null, source:"GitHub API" };
 }
 
-/* boot */
-(async()=>{
-  try{ const d=await fromLocal(); render(d.files,d.updated); }
-  catch{ try{ const d=await fromAPI(); render(d.files,d.updated); }
-         catch{ stamp.textContent="Could not list tools. (No local index yet and API unavailable)"; } }
+/* ==================== BOOT ==================== */
+(async ()=>{
+  try { const {files,source,updated} = await fromLocalIndex(); render(files, source, updated); return; }
+  catch(e1){ /* continue */ }
+  try { const {files,source,updated} = await fromLegacy(); render(files, source, updated); return; }
+  catch(e2){ /* continue */ }
+  try { const {files,source,updated} = await fromAPI(); render(files, source, updated); return; }
+  catch(e3){ /* continue */ }
+  // last ditch: inline to avoid blanks
+  if (INLINE_FILES.length){
+    render(INLINE_FILES, "inline", null);
+  } else {
+    status.textContent = "0 file(s) • no index-data.json • no tools.json • API unavailable";
+  }
 })();
 </script>
 </body>
