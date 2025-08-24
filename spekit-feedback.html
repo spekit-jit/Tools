@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Integrates with your auto-label workflow -->
+  <meta name="app-label" content="Spekit Feedback" />
+  <meta name="app-emoji" content="🗳️" />
+  <meta name="app-color" content="#6C5CE7" />
+
+  <title>Spekit Feedback</title>
+  <meta name="color-scheme" content="light dark" />
+
+  <style>
+    :root{
+      --ink:#0f1426; --bg:#f6f7fb; --panel:#ffffff; --brand:#6C5CE7; --muted:#9aa3bf;
+      --ok:#12c48b; --warn:#ffb020; --err:#ff6b6b; --shadow:0 14px 36px rgba(12,24,60,.10)
+    }
+    @media (prefers-color-scheme: dark){
+      :root{ --ink:#e9ecf8; --bg:#0f1220; --panel:#14182a; --shadow:0 18px 50px rgba(0,0,0,.45) }
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:-apple-system,system-ui,Segoe UI,Roboto,Helvetica,Arial,Apple Color Emoji,Segoe UI Emoji;
+      color:var(--ink); background:
+        radial-gradient(1000px 420px at 0% -10%, rgba(108,92,231,.18), transparent 55%),
+        radial-gradient(800px 360px at 110% 0%, rgba(18,196,139,.18), transparent 55%), var(--bg);
+      display:flex; justify-content:center;
+    }
+    .wrap{width:100%; max-width:980px; margin:18px; padding:18px; background:var(--panel); border-radius:16px; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.08)}
+    .hdr{display:flex; gap:12px; align-items:center; margin-bottom:10px}
+    .logo{width:40px; height:40px; display:grid; place-items:center; border-radius:10px;
+      background:linear-gradient(145deg, #6C5CE7, #8B7CFF); color:#fff; font-weight:800}
+    h1{font-size:22px; margin:0}
+    .sub{color:var(--muted); font-size:13px}
+    .bar{height:8px; background:#e6e8f0; border-radius:999px; overflow:hidden; margin:10px 0 18px}
+    .bar>i{display:block; height:100%; width:0%; background:linear-gradient(90deg, #6C5CE7, #12c48b)}
+    .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:12px}
+    .card{grid-column:span 12; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px}
+    @media(min-width:780px){ .half{grid-column:span 6} .third{grid-column:span 4}}
+    label.q{display:block; font-weight:700; margin:0 0 6px}
+    .help{font-size:12px; color:var(--muted); margin-bottom:8px}
+    input[type="text"], input[type="email"], textarea, select{
+      width:100%; padding:12px 12px; border-radius:12px; border:1px solid #d6daea; background:transparent; color:inherit
+    }
+    textarea{min-height:90px; resize:vertical}
+    .chips{display:flex; flex-wrap:wrap; gap:8px}
+    .chip{padding:10px 12px; border-radius:999px; border:1px solid #d6daea; cursor:pointer; user-select:none}
+    .chip.active{background:#6C5CE7; color:#fff; border-color:transparent}
+    .seg{display:flex; gap:6px; flex-wrap:wrap}
+    .seg button{padding:10px 12px; border-radius:10px; border:1px solid #d6daea; background:transparent; color:inherit; cursor:pointer}
+    .seg button.active{background:#6C5CE7; color:#fff; border-color:transparent}
+    .nps{display:flex; gap:6px; flex-wrap:wrap}
+    .nps button{width:44px; height:36px; border-radius:10px; border:1px solid #d6daea; background:transparent; cursor:pointer}
+    .nps button.active{background:#6C5CE7; color:#fff; border-color:transparent; transform:translateY(-1px)}
+    .rate{display:flex; gap:6px}
+    .rate button{flex:1; padding:10px; border-radius:10px; border:1px solid #d6daea; background:transparent; cursor:pointer}
+    .rate button.active{background:#6C5CE7; color:#fff; border-color:transparent}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+    .btn{padding:12px 14px; border-radius:12px; border:1px solid transparent; cursor:pointer; font-weight:700}
+    .primary{background:#6C5CE7; color:#fff}
+    .ghost{background:transparent; border-color:#d6daea}
+    .ok{background:var(--ok); color:#fff}
+    .warn{background:var(--warn); color:#000}
+    .err{background:var(--err); color:#fff}
+    .tiny{font-size:12px; color:var(--muted); margin-top:6px}
+    .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#14182a; color:#fff; padding:10px 12px; border-radius:10px; display:none}
+    .divider{height:1px; background:rgba(0,0,0,.08); margin:6px 0 14px}
+    .badges{display:flex;gap:8px;flex-wrap:wrap;font-size:12px}
+    .badge{padding:6px 8px;border:1px dashed #d6daea;border-radius:8px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="wrap" id="app">
+    <div class="hdr">
+      <div class="logo">S</div>
+      <div>
+        <h1>Spekit Feedback</h1>
+        <div class="sub">Help us make just-in-time learning even better—this takes ~2 minutes.</div>
+      </div>
+    </div>
+
+    <div class="bar"><i id="progress"></i></div>
+
+    <form id="f" class="grid" autocomplete="on">
+      <!-- WHO -->
+      <section class="card half">
+        <label class="q">Your role</label>
+        <div class="help">So we can spot patterns by persona.</div>
+        <div class="chips" data-name="role" data-type="single">
+          <span class="chip">AE</span><span class="chip">SDR/BDR</span><span class="chip">AM</span><span class="chip">CSM</span>
+          <span class="chip">SE</span><span class="chip">Manager</span><span class="chip">Ops/Admin</span><span class="chip">Other</span>
+        </div>
+      </section>
+
+      <section class="card half">
+        <label class="q">Primary tools where you see Spekit</label>
+        <div class="help">Pick all that apply.</div>
+        <div class="chips" data-name="tools" data-type="multi">
+          <span class="chip">Salesforce</span><span class="chip">Gmail</span><span class="chip">Outlook</span><span class="chip">LinkedIn</span>
+          <span class="chip">Gong</span><span class="chip">Outreach</span><span class="chip">ServiceNow</span><span class="chip">Workday</span>
+          <span class="chip">Other</span>
+        </div>
+      </section>
+
+      <!-- USE & NPS -->
+      <section class="card half">
+        <label class="q">How often do you use Spekit?</label>
+        <div class="seg" data-name="cadence" data-type="single">
+          <button type="button">Daily</button><button type="button">Weekly</button><button type="button">Monthly</button><button type="button">Rarely</button>
+        </div>
+      </section>
+
+      <section class="card half">
+        <label class="q">How likely are you to recommend Spekit to a colleague?</label>
+        <div class="help">0 = Not at all likely, 10 = Extremely likely</div>
+        <div class="nps" data-name="nps" data-type="single-number"></div>
+      </section>
+
+      <!-- QUALITY DIMENSIONS -->
+      <section class="card third">
+        <label class="q">Find answers in the flow of work</label>
+        <div class="help">How well Spekit surfaces what you need, where you work.</div>
+        <div class="rate" data-name="findability" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <section class="card third">
+        <label class="q">AI answer accuracy</label>
+        <div class="help">Are answers relevant and trustworthy?</div>
+        <div class="rate" data-name="ai_accuracy" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <section class="card third">
+        <label class="q">Speed & responsiveness</label>
+        <div class="rate" data-name="speed" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <section class="card third">
+        <label class="q">Content freshness</label>
+        <div class="help">How up-to-date content feels.</div>
+        <div class="rate" data-name="freshness" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <section class="card third">
+        <label class="q">Integrations reliability</label>
+        <div class="help">Google Drive / Confluence syncing & availability.</div>
+        <div class="rate" data-name="integrations" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <section class="card third">
+        <label class="q">Search quality</label>
+        <div class="help">Finding the right Spek/playbook fast.</div>
+        <div class="rate" data-name="search" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
+        </div>
+      </section>
+
+      <!-- FEATURES -->
+      <section class="card half">
+        <label class="q">Which features do you use most?</label>
+        <div class="chips" data-name="features" data-type="multi">
+          <span class="chip">Speks</span><span class="chip">Playlists</span><span class="chip">Browser Extension</span><span class="chip">Search</span>
+          <span class="chip">Walkthroughs</span><span class="chip">Trackable Links</span><span class="chip">Slack share</span><span class="chip">Other</span>
+        </div>
+      </section>
+
+      <section class="card half">
+        <label class="q">What’s the biggest friction you hit lately?</label>
+        <div class="chips" data-name="friction" data-type="single">
+          <span class="chip">Couldn’t find content</span><span class="chip">AI not accurate</span><span class="chip">Out-of-date content</span>
+          <span class="chip">Too slow</span><span class="chip">Integrations flaky</span><span class="chip">Other</span>
+        </div>
+      </section>
+
+      <!-- STORIES -->
+      <section class="card">
+        <label class="q">Story time</label>
+        <div class="help">Describe a recent moment Spekit <i>helped</i> or <i>missed</i> at the moment of need.</div>
+        <textarea name="story" placeholder="What were you trying to do? Where were you (Salesforce, Gmail, etc.)? What happened?"></textarea>
+      </section>
+
+      <section class="card">
+        <label class="q">If you could grant one wish for Spekit, what would it be?</label>
+        <textarea name="wish" placeholder="e.g., better personalization, faster AI answers, richer Drive/Confluence sync, mobile, analytics for me…"></textarea>
+      </section>
+
+      <!-- CONTACT -->
+      <section class="card half">
+        <label class="q">May we follow up?</label>
+        <div class="seg" data-name="followup" data-type="single">
+          <button type="button">Yes</button><button type="button">No</button>
+        </div>
+      </section>
+
+      <section class="card half">
+        <label class="q">Your email (optional)</label>
+        <input type="email" name="email" placeholder="you@company.com" inputmode="email" />
+        <div class="tiny">We only use this to clarify feedback.</div>
+      </section>
+
+      <!-- ACTIONS -->
+      <section class="card">
+        <div class="badges">
+          <span class="badge">Auto-saves locally</span>
+          <span class="badge">Works offline</span>
+          <span class="badge">Export to JSON / Clipboard / Email</span>
+        </div>
+        <div class="divider"></div>
+        <div class="actions">
+          <button type="button" class="btn primary" id="btn-submit">Review & Export</button>
+          <button type="button" class="btn ghost" id="btn-copy">Copy JSON</button>
+          <button type="button" class="btn ghost" id="btn-download">Download JSON</button>
+          <button type="button" class="btn ghost" id="btn-email">Email</button>
+          <button type="reset"  class="btn err">Reset</button>
+        </div>
+        <div class="tiny">Tip: You can keep filling later — your answers auto-save in this browser.</div>
+      </section>
+    </form>
+
+    <div id="toast" class="toast"></div>
+  </main>
+
+  <script>
+    // ------- tiny utils -------
+    const $ = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
+    const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.style.display='block'; setTimeout(()=>t.style.display='none', 1600); };
+    const lsKey = 'spekit-feedback-v1';
+
+    // Build NPS 0..10 buttons
+    (() => {
+      const box = $('[data-name="nps"]');
+      for(let i=0;i<=10;i++){
+        const b=document.createElement('button'); b.type='button'; b.textContent=String(i);
+        box.appendChild(b);
+      }
+    })();
+
+    // Chips & Segmented control interactions
+    function wireSelectable(container){
+      const type = container.dataset.type;
+      container.addEventListener('click', (e)=>{
+        const chip = e.target.closest('.chip,button'); if(!chip) return;
+        if(type==='single' || type==='single-number'){
+          (container.matches('.chips')? container.querySelectorAll('.chip'): container.querySelectorAll('button'))
+            .forEach(el=>el.classList.remove('active'));
+          chip.classList.add('active');
+        } else if(type==='multi'){
+          chip.classList.toggle('active');
+        }
+        save();
+        updateProgress();
+      });
+    }
+    $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(wireSelectable);
+
+    // Likert group (1-5) acts like single
+    $$('[data-type="likert5"]').forEach(g=>g.addEventListener('click',(e)=>{
+      const b=e.target.closest('button'); if(!b) return;
+      g.querySelectorAll('button').forEach(el=>el.classList.remove('active'));
+      b.classList.add('active'); save(); updateProgress();
+    }));
+
+    // Restore from localStorage
+    function restore(){
+      try{
+        const data = JSON.parse(localStorage.getItem(lsKey) || '{}');
+        // chips & buttons
+        $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(g=>{
+          const name = g.dataset.name; const type = g.dataset.type; const val = data[name];
+          if(!val) return;
+          if(type==='multi' && Array.isArray(val)){
+            g.querySelectorAll('.chip').forEach(ch=>{ if(val.includes(ch.textContent)) ch.classList.add('active'); });
+          } else {
+            const match = (g.matches('.chips')? g.querySelectorAll('.chip'): g.querySelectorAll('button'));
+            match.forEach(el=>{ if(el.textContent==String(val)) el.classList.add('active'); });
+          }
+        });
+        // inputs
+        ['story','wish','email'].forEach(n=>{ if(data[n]) document.querySelector(`[name="${n}"]`).value = data[n]; });
+      }catch(e){}
+    }
+
+    function gather(){
+      const out = {};
+      $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(g=>{
+        const name = g.dataset.name; const type = g.dataset.type;
+        if(type==='multi'){
+          out[name] = Array.from(g.querySelectorAll('.chip.active')).map(ch=>ch.textContent);
+        } else if(type==='single-number' || type==='single' || type==='likert5'){
+          const a = g.querySelector('.chip.active,button.active');
+          if(a) out[name] = isNaN(a.textContent) ? a.textContent : Number(a.textContent);
+        }
+      });
+      ['story','wish','email'].forEach(n=>{ const el=document.querySelector(`[name="${n}"]`); out[n]=el.value.trim(); });
+      // derived
+      if(typeof out.nps==='number') out.nps_type = out.nps >=9 ? 'Promoter' : (out.nps<=6 ? 'Detractor' : 'Passive');
+      out.timestamp = new Date().toISOString();
+      out.userAgent = navigator.userAgent;
+      return out;
+    }
+
+    function save(){ try{ localStorage.setItem(lsKey, JSON.stringify(gather())); }catch(e){} }
+    function updateProgress(){
+      const total = 10; // count of "scored" prompts for progress (rough, on purpose)
+      const g = gather();
+      let done = 0;
+      ['role','tools','cadence','nps','findability','ai_accuracy','speed','freshness','integrations','search'].forEach(k=>{
+        if(g[k] && ((Array.isArray(g[k]) && g[k].length) || (!Array.isArray(g[k])))) done++;
+      });
+      $('#progress').style.width = Math.round((done/total)*100)+'%';
+    }
+
+    // Wire text inputs
+    $$('textarea,input[type="email"]').forEach(el=>el.addEventListener('input', ()=>{ save(); updateProgress(); }));
+
+    // Actions
+    $('#btn-copy').addEventListener('click', async ()=>{
+      const data = JSON.stringify(gather(), null, 2);
+      try{ await navigator.clipboard.writeText(data); toast('Copied JSON'); }catch{ toast('Copy failed'); }
+    });
+
+    $('#btn-download').addEventListener('click', ()=>{
+      const blob = new Blob([JSON.stringify(gather(), null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='spekit-feedback.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    $('#btn-email').addEventListener('click', ()=>{
+      const to = ''; // optionally hardcode a mailbox, e.g., 'feedback@spekit.co'
+      const subject = encodeURIComponent('Spekit Feedback');
+      const body = encodeURIComponent(JSON.stringify(gather(), null, 2));
+      const href = `mailto:${to}?subject=${subject}&body=${body}`;
+      window.location.href = href;
+    });
+
+    $('#btn-submit').addEventListener('click', ()=>{
+      const g = gather();
+      if(!g.role){ toast('Please select your role'); return; }
+      if(typeof g.nps !== 'number'){ toast('Please choose an NPS score'); return; }
+      toast('Looks good! Use Copy/Download/Email to send it.');
+    });
+
+    // Reset clears localStorage
+    $('#f').addEventListener('reset', ()=>{
+      setTimeout(()=>{ localStorage.removeItem(lsKey); updateProgress(); toast('Cleared'); }, 0);
+    });
+
+    // init
+    restore(); updateProgress();
+  </script>
+</body>
+</html>
