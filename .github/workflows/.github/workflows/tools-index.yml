@@ -1,0 +1,45 @@
+name: Build tools index
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'tools/**'
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'  # every 30 minutes
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate tools/index-data.json
+        run: |
+          mkdir -p tools
+          python3 - << 'PY'
+          import os, json
+          root='tools'
+          files=[]
+          for name in os.listdir(root):
+              low=name.lower()
+              if low in ('index.html','index.htm'): continue
+              if low.endswith(('.html','.htm')): files.append(name)
+          files.sort()
+          with open(os.path.join(root,'index-data.json'),'w',encoding='utf-8') as f:
+              json.dump(files,f,ensure_ascii=False)
+          print("Wrote tools/index-data.json", files)
+          PY
+      - name: Commit if changed
+        run: |
+          if [[ -n "$(git status --porcelain tools/index-data.json)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add tools/index-data.json
+            git commit -m "chore: sync tools index"
+            git push
+          else
+            echo "No changes."
+          fi
