@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Content Mapping</title>
 <meta name="color-scheme" content="light dark" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root {
     --bg: #0f1220; --panel: #121527; --ink: #eef1ff; --muted: #9aa3bf;
@@ -21,76 +23,86 @@
     .btn { border: 1px solid rgba(0,0,0,.15); color: #333; box-shadow: 0 8px 16px rgba(0,0,0,.15); }
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { height: 100%; margin: 0; overflow: auto; }
   body {
-    margin: 0; font-family: var(--font); color: var(--ink);
+    font-family: var(--font); color: var(--ink);
     background:
-      radial-gradient(900px 420px at 0% -10%, rgba(110,86,207,.25), transparent 55%),
-      radial-gradient(800px 360px at 110% 0%, rgba(69,231,179,.20), transparent 55%),
-      var(--bg);
-    display: flex; align-items: stretch; justify-content: center;
+      linear-gradient(rgba(255,255,255,.02) .1em, transparent .1em),
+      linear-gradient(90deg, rgba(255,255,255,.02) .1em, transparent .1em);
+    background-size: 2em 2em;
+    background-color: var(--bg);
+    display: flex; align-items: flex-start; justify-content: center;
   }
   .wrap {
-    width: 100%; max-width: 1100px; padding: 18px; margin: 10px;
+    width: 100%; max-width: 1200px; padding: 24px; margin: 20px;
     background: var(--panel); border: 1px solid rgba(255,255,255,.08);
-    border-radius: 18px; box-shadow: var(--shadow);
+    border-radius: 18px; box-shadow: var(--shadow); position: relative;
+    transition: transform 0.2s ease;
+    transform-origin: top center;
   }
-  .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; }
+  .bar {
+    display: flex; gap: 12px; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; flex-wrap: wrap; position: sticky; top: 0; z-index: 10;
+    background: var(--panel); padding: 10px 0;
+  }
+  .zoom-controls { display: flex; gap: 8px; align-items: center; }
   .ghost, .primary {
-    appearance: none; border: 1px solid var(--ring); padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s, box-shadow 0.3s; position: relative; overflow: hidden;
+    appearance: none; border: 1px solid var(--ring); padding: 12px 16px; border-radius: 12px;
+    font-weight: 700; cursor: pointer; transition: all 0.2s, box-shadow 0.3s; position: relative;
+    overflow: hidden; background: transparent; color: var(--ink);
   }
-  .ghost { background: transparent; color: var(--ink); }
   .primary { background: var(--accent); color: #fff; box-shadow: 0 12px 24px rgba(110,86,207,.35); }
   .ghost:hover, .primary:hover {
     filter: brightness(1.05); transform: scale(1.02); box-shadow: 0 0 12px rgba(110,86,207,.5);
   }
   .ghost::after, .primary::after {
-    content: '✨'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: 0; font-size: 20px;
-    transition: opacity 0.3s;
+    content: '✨'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    opacity: 0; font-size: 20px; transition: opacity 0.3s;
   }
   .ghost:hover::after, .primary:hover::after { opacity: 0.3; }
   .parent {
     position: relative; background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
-    border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 14px; margin: 24px 0;
+    border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 16px; margin: 32px 0;
     transition: all 0.3s ease;
   }
-  .parent-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .parent-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .btn {
-    display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; min-height: 44px;
+    display: inline-flex; align-items: center; gap: 8px; padding: 12px 18px; min-height: 48px;
     border-radius: 12px; border: 1px solid rgba(255,255,255,.15);
     color: #fff; font-weight: 800; text-decoration: none; cursor: text;
-    box-shadow: 0 12px 24px rgba(0,0,0,.25); outline: none; white-space: pre-wrap; max-width: 300px; text-align: center;
-    transition: box-shadow 0.2s, transform 0.2s;
+    box-shadow: 0 12px 24px rgba(0,0,0,.25); outline: none; white-space: pre-wrap;
+    max-width: 320px; text-align: center; transition: box-shadow 0.2s, transform 0.2s;
   }
-  .btn:hover { box-shadow: 0 0 10px rgba(110,86,207,.5); }
-  .btn.small { min-height: 38px; padding: 8px 12px; font-weight: 700; max-width: 200px; }
-  .btn.tiny { min-height: 34px; padding: 6px 10px; font-weight: 600; max-width: 180px; }
+  .btn:hover { box-shadow: 0 0 12px rgba(110,86,207,.5); }
+  .btn.small { min-height: 42px; padding: 10px 14px; font-weight: 700; max-width: 280px; font-size: 15px; }
+  .btn.tiny { min-height: 38px; padding: 8px 12px; font-weight: 600; max-width: 240px; font-size: 14px; }
   .btn[contenteditable="true"] { caret-color: currentColor; }
   .btn:focus { box-shadow: 0 0 0 3px var(--ring), 0 12px 24px rgba(0,0,0,.25); }
   .act {
     display: inline-flex; align-items: center; justify-content: center;
     width: 40px; height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,.15);
-    background: #1a1f3a; color: #fff; cursor: pointer; font-weight: 900; transition: transform 0.2s, box-shadow 0.2s;
+    background: #1a1f3a; color: #fff; cursor: pointer; font-weight: 900; transition: all 0.2s;
+    opacity: 0; pointer-events: none;
   }
+  .chip.active .act, .parent-head.active .act { opacity: 1; pointer-events: auto; }
   .act:hover { filter: brightness(1.05); transform: scale(1.05); box-shadow: 0 0 8px rgba(110,86,207,.5); }
-  .subs { margin-top: 16px; }
-  .subs-row, .subsubs-row { display: grid; grid-auto-flow: column; gap: 12px; align-items: start; justify-content: center; }
+  .subs { margin-top: 20px; }
+  .subs-row, .subsubs-row { display: grid; grid-auto-flow: column; gap: 16px; align-items: start; justify-content: center; }
   .chip {
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
     background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
-    border: 1px solid rgba(255,255,255,.12); padding: 8px; border-radius: 14px; transition: all 0.3s ease;
+    border: 1px solid rgba(255,255,255,.12); padding: 10px; border-radius: 14px; transition: all 0.3s ease;
   }
   .chip:hover { box-shadow: 0 4px 12px rgba(110,86,207,.5); }
   .chip .btn { flex: none; text-align: center; }
-  .chip .actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+  .chip .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
   .chip .mini {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 32px; height: 32px; border-radius: 8px; border: 1px solid rgba(255,255,255,.15);
-    background: #171b33; color: #fff; cursor: pointer; font-weight: 900; font-size: 14px; transition: transform 0.2s, box-shadow 0.2s;
+    width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.15);
+    background: #171b33; color: #fff; cursor: pointer; font-weight: 900; font-size: 14px; transition: all 0.2s;
   }
   .mini:hover { filter: brightness(1.07); transform: scale(1.05); box-shadow: 0 0 6px rgba(110,86,207,.5); }
-  .tiny { color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .tiny-text { color: var(--muted); font-size: 13px; margin-top: 8px; text-align: center; }
+  .zoom-controls .mini { width: 40px; height: 40px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
   .new-item { animation: fadeIn 0.3s ease, pulse 0.5s ease; }
@@ -99,25 +111,39 @@
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="wrap">
   <div class="bar">
-    <button id="addParent" class="primary">+ Add parent topic</button>
-    <button id="clearBtn" class="ghost" title="Clear the entire map">🗑 Clear</button>
-    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map to clipboard">📋 Copy JSON</button>
+    <div class="zoom-controls">
+      <button id="zoomIn" class="ghost mini" title="Zoom in">+</button>
+      <button id="zoomOut" class="ghost mini" title="Zoom out">−</button>
+      <button id="zoomReset" class="ghost mini" title="Reset zoom">↺</button>
+    </div>
+    <div>
+      <button id="addParent" class="primary">+ Add parent topic</button>
+      <button id="clearBtn" class="ghost" title="Clear the entire map">🗑 Clear</button>
+      <button id="exportPdfBtn" class="ghost" title="Export map as PDF">📄 Export PDF</button>
+    </div>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: Click any pill to edit. Parent “+” adds a sub-topic. Sub-topic “+” adds a sub-sub-topic. Buttons: ← left, → right, × delete. Changes auto-save to browser storage.</div>
+  <div class="tiny-text">Tip: Click a pill to edit and show action buttons. Parent “+” adds a sub-topic. Sub-topic “+” adds a sub-sub-topic. Buttons: ← left, → right, × delete. Use zoom controls or pinch/scroll to adjust view. Changes auto-save.</div>
 </div>
 
 <script>
 try {
+  const { jsPDF } = window.jspdf;
   const board = document.getElementById('board');
   if (!board) throw new Error('Board element not found');
+  const wrap = document.getElementById('wrap');
+  if (!wrap) throw new Error('Wrap element not found');
   const addParentBtn = document.getElementById('addParent');
   if (!addParentBtn) throw new Error('Add parent button not found');
 
   let parentId = 0;
   let parents = [];
+  let zoomLevel = 1;
+  const zoomMin = 0.5;
+  const zoomMax = 2;
+  const zoomStep = 0.1;
 
   function hash(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
   function hueFrom(s) { return hash(s) % 360; }
@@ -134,14 +160,19 @@ try {
     el.spellcheck = false;
     el.textContent = text;
     el.style.background = colorFor(key, size === 'small' ? 5 : size === 'tiny' ? 10 : 0);
-    el.addEventListener('focus', () => {
-      if ((text === 'parent topic' || text === 'sub-topic' || text === 'sub-sub-topic') && el.textContent.trim() === text) {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-      }
+    el.addEventListener('click', () => {
+      el.focus();
+      const parent = el.closest('.parent-head, .chip');
+      if (parent) parent.classList.add('active');
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    });
+    el.addEventListener('blur', () => {
+      const parent = el.closest('.parent-head, .chip');
+      if (parent) parent.classList.remove('active');
     });
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
@@ -269,7 +300,7 @@ try {
             actions.className = 'actions';
 
             const left = document.createElement('button');
-            left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
+            left.className = 'mini act'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
             left.addEventListener('click', () => {
               try {
                 const newSub = newSubModel();
@@ -283,7 +314,7 @@ try {
             });
 
             const right = document.createElement('button');
-            right.className = 'mini'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
+            right.className = 'mini act'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
             right.addEventListener('click', () => {
               try {
                 const newSub = newSubModel();
@@ -297,7 +328,7 @@ try {
             });
 
             const addSubSub = document.createElement('button');
-            addSubSub.className = 'mini'; addSubSub.title = 'Add sub-sub-topic'; addSubSub.textContent = '+';
+            addSubSub.className = 'mini act'; addSubSub.title = 'Add sub-sub-topic'; addSubSub.textContent = '+';
             addSubSub.addEventListener('click', () => {
               try {
                 const newSubSub = newSubSubModel();
@@ -311,7 +342,7 @@ try {
             });
 
             const del = document.createElement('button');
-            del.className = 'mini'; del.title = 'Delete this sub-topic'; del.textContent = '×';
+            del.className = 'mini act'; del.title = 'Delete this sub-topic'; del.textContent = '×';
             del.addEventListener('click', () => {
               try {
                 if (confirm('Delete this sub-topic and its sub-sub-topics?')) {
@@ -344,7 +375,7 @@ try {
               subsubActions.className = 'actions';
 
               const ssLeft = document.createElement('button');
-              ssLeft.className = 'mini'; ssLeft.title = 'Add sub-sub-topic to the left'; ssLeft.textContent = '←';
+              ssLeft.className = 'mini act'; ssLeft.title = 'Add sub-sub-topic to the left'; ssLeft.textContent = '←';
               ssLeft.addEventListener('click', () => {
                 try {
                   const newSubSub = newSubSubModel();
@@ -358,7 +389,7 @@ try {
               });
 
               const ssRight = document.createElement('button');
-              ssRight.className = 'mini'; ssRight.title = 'Add sub-sub-topic to the right'; ssRight.textContent = '→';
+              ssRight.className = 'mini act'; ssRight.title = 'Add sub-sub-topic to the right'; ssRight.textContent = '→';
               ssRight.addEventListener('click', () => {
                 try {
                   const newSubSub = newSubSubModel();
@@ -372,7 +403,7 @@ try {
               });
 
               const ssDel = document.createElement('button');
-              ssDel.className = 'mini'; ssDel.title = 'Delete this sub-sub-topic'; ssDel.textContent = '×';
+              ssDel.className = 'mini act'; ssDel.title = 'Delete this sub-sub-topic'; ssDel.textContent = '×';
               ssDel.addEventListener('click', () => {
                 try {
                   if (confirm('Delete this sub-sub-topic?')) {
@@ -409,21 +440,21 @@ try {
         try {
           const wrapRect = wrap.getBoundingClientRect();
           const parentRect = pill.getBoundingClientRect();
-          const parentCenterX = parentRect.left - wrapRect.left + parentRect.width / 2;
-          const parentBottomY = parentRect.bottom - wrapRect.top + 8;
+          const parentCenterX = (parentRect.left - wrapRect.left + parentRect.width / 2) / zoomLevel;
+          const parentBottomY = (parentRect.bottom - wrapRect.top + 10) / zoomLevel;
 
           const subPills = subs.querySelectorAll('.btn.small');
           subPills.forEach(sp => {
             const spRect = sp.getBoundingClientRect();
-            const spCenterX = spRect.left - wrapRect.left + spRect.width / 2;
-            const spTopY = spRect.top - wrapRect.top - 8;
+            const spCenterX = (spRect.left - wrapRect.left + spRect.width / 2) / zoomLevel;
+            const spTopY = (spRect.top - wrapRect.top - 10) / zoomLevel;
             const midY = (parentBottomY + spTopY) / 2;
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', `M${parentCenterX} ${parentBottomY} C ${parentCenterX} ${midY}, ${spCenterX} ${midY}, ${spCenterX} ${spTopY}`);
             path.setAttribute('stroke', `url(#lineGrad${model.id})`);
-            path.setAttribute('stroke-width', '2');
-            path.setAttribute('stroke-opacity', '0.5');
+            path.setAttribute('stroke-width', '3');
+            path.setAttribute('stroke-opacity', '0.7');
             path.setAttribute('stroke-linecap', 'round');
             path.setAttribute('fill', 'none');
             svg.appendChild(path);
@@ -431,16 +462,16 @@ try {
             const subsubPills = sp.parentElement.querySelectorAll('.btn.tiny');
             subsubPills.forEach(ssp => {
               const sspRect = ssp.getBoundingClientRect();
-              const sspCenterX = sspRect.left - wrapRect.left + sspRect.width / 2;
-              const sspTopY = sspRect.top - wrapRect.top - 8;
-              const subBottomY = spRect.bottom - wrapRect.top + 8;
+              const sspCenterX = (sspRect.left - wrapRect.left + sspRect.width / 2) / zoomLevel;
+              const sspTopY = (sspRect.top - wrapRect.top - 10) / zoomLevel;
+              const subBottomY = (spRect.bottom - wrapRect.top + 10) / zoomLevel;
               const subMidY = (subBottomY + sspTopY) / 2;
 
               const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
               subPath.setAttribute('d', `M${spCenterX} ${subBottomY} C ${spCenterX} ${subMidY}, ${sspCenterX} ${subMidY}, ${sspCenterX} ${sspTopY}`);
               subPath.setAttribute('stroke', `url(#lineGrad${model.id})`);
-              subPath.setAttribute('stroke-width', '1.5');
-              subPath.setAttribute('stroke-opacity', '0.4');
+              subPath.setAttribute('stroke-width', '2');
+              subPath.setAttribute('stroke-opacity', '0.6');
               subPath.setAttribute('stroke-linecap', 'round');
               subPath.setAttribute('fill', 'none');
               svg.appendChild(subPath);
@@ -450,6 +481,12 @@ try {
           console.error('Failed to draw lines:', e);
         }
       }
+
+      const resizeObserver = new ResizeObserver(() => {
+        renderSubs();
+        wrap.style.minHeight = `${board.scrollHeight + 100}px`;
+      });
+      resizeObserver.observe(board);
 
       renderSubs();
       wrap.append(svg, head, subs);
@@ -481,21 +518,58 @@ try {
     }
   }
 
-  function exportJSON() {
+  function exportPDF() {
     try {
-      const data = parents.map(model => ({
-        title: model.title,
-        subs: model.subs.map(sub => ({
-          title: sub.title,
-          subsubs: sub.subsubs.map(ss => ss.title)
-        }))
-      }));
-      navigator.clipboard.writeText(JSON.stringify({map: data, exported: new Date().toISOString()}, null, 2)).then(() => {
-        alert('JSON copied to clipboard!');
+      // Hide action buttons for PDF
+      document.querySelectorAll('.act').forEach(btn => btn.style.display = 'none');
+      const pdfWrap = document.createElement('div');
+      pdfWrap.style.background = 'white';
+      pdfWrap.style.padding = '20px';
+      pdfWrap.style.width = '794px'; // A4 width in pixels at 96 DPI
+      pdfWrap.innerHTML = board.innerHTML;
+
+      // Adjust SVG for PDF
+      pdfWrap.querySelectorAll('svg').forEach(svg => {
+        svg.style.position = 'absolute';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+      });
+
+      document.body.appendChild(pdfWrap);
+      html2canvas(pdfWrap, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        const imgWidth = 190; // A4 width - margins
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 10;
+
+        pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+        heightLeft -= 277; // A4 height in mm
+
+        while (heightLeft > 0) {
+          pdf.addPage();
+          position = heightLeft - imgHeight + 10;
+          pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
+          heightLeft -= 277;
+        }
+
+        pdf.save('content-map.pdf');
+        document.body.removeChild(pdfWrap);
+        document.querySelectorAll('.act').forEach(btn => btn.style.display = '');
+      }).catch(e => {
+        console.error('Failed to generate PDF:', e);
+        alert('Error generating PDF.');
+        document.body.removeChild(pdfWrap);
+        document.querySelectorAll('.act').forEach(btn => btn.style.display = '');
       });
     } catch (e) {
-      console.error('Failed to export JSON:', e);
-      alert('Error exporting JSON.');
+      console.error('Failed to export PDF:', e);
+      alert('Error exporting PDF.');
     }
   }
 
@@ -507,6 +581,8 @@ try {
         localStorage.removeItem('topicMap');
         parentId = 0;
         addParent(false);
+        zoomLevel = 1;
+        wrap.style.transform = `scale(1)`;
       }
     } catch (e) {
       console.error('Failed to clear map:', e);
@@ -534,8 +610,49 @@ try {
     }
   }
 
+  function updateZoom(newZoom) {
+    zoomLevel = Math.max(zoomMin, Math.min(zoomMax, newZoom));
+    wrap.style.transform = `scale(${zoomLevel})`;
+    wrap.style.minHeight = `${board.scrollHeight / zoomLevel + 100}px`;
+    console.log('Zoom updated:', zoomLevel);
+  }
+
+  // Zoom controls
+  document.getElementById('zoomIn').addEventListener('click', () => updateZoom(zoomLevel + zoomStep));
+  document.getElementById('zoomOut').addEventListener('click', () => updateZoom(zoomLevel - zoomStep));
+  document.getElementById('zoomReset').addEventListener('click', () => updateZoom(1));
+
+  // Mouse wheel zoom
+  wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -zoomStep : zoomStep;
+    updateZoom(zoomLevel + delta);
+  });
+
+  // Pinch-to-zoom
+  let lastDistance = 0;
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      lastDistance = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+    }
+  });
+  wrap.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2) {
+      const distance = Math.hypot(
+        e.touches[0].pageX - e.touches[1].pageX,
+        e.touches[0].pageY - e.touches[1].pageY
+      );
+      const delta = (distance - lastDistance) / 1000;
+      updateZoom(zoomLevel + delta);
+      lastDistance = distance;
+    }
+  });
+
   addParentBtn.addEventListener('click', addParent);
-  document.getElementById('exportBtn').addEventListener('click', exportJSON);
+  document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
   document.getElementById('clearBtn').addEventListener('click', clearMap);
   loadFromStorage();
   console.log('App initialized');
