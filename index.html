@@ -6,38 +6,24 @@
 <title>Tiny Tools</title>
 <meta name="color-scheme" content="light dark" />
 <style>
-  :root{
-    --bg:#0f1220; --panel:#14182a; --card:#0f1324; --ink:#e9ecf8; --muted:#9aa3bf;
-    --primary:#6E56CF; --accent:#45E7B3; --radius:16px; --shadow:0 12px 30px rgba(0,0,0,.36);
-    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-  }
-  @media (prefers-color-scheme: light){
-    :root{ --bg:#f6f7fb; --panel:#ffffff; --card:#ffffff; --ink:#0f1426; --muted:#596486; --shadow:0 14px 32px rgba(12,24,60,.08); }
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:
+  :root{--bg:#0f1220;--panel:#14182a;--card:#0f1324;--ink:#e9ecf8;--muted:#9aa3bf;--primary:#6E56CF;--accent:#45E7B3;--radius:16px;--shadow:0 12px 30px rgba(0,0,0,.36);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji"}
+  @media (prefers-color-scheme: light){:root{--bg:#f6f7fb;--panel:#fff;--card:#fff;--ink:#0f1426;--muted:#596486;--shadow:0 14px 32px rgba(12,24,60,.08)}}
+  *{box-sizing:border-box} body{margin:0;background:
     radial-gradient(1200px 600px at 0% -10%, color-mix(in srgb, var(--primary), transparent 70%), transparent 60%),
     radial-gradient(900px 400px at 110% 0%, color-mix(in srgb, var(--accent), transparent 75%), transparent 60%),
     var(--bg); color:var(--ink); font-family:var(--font)}
   header{padding:22px 18px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(180deg, rgba(255,255,255,.03), transparent)}
   .wrap{max-width:1100px;margin:0 auto;padding:0 12px}
-  h1{margin:0 0 6px;font-size:22px;letter-spacing:.2px}
-  .sub{margin:0;color:var(--muted);font-size:13px}
+  h1{margin:0 0 6px;font-size:22px;letter-spacing:.2px}.sub{margin:0;color:var(--muted);font-size:13px}
   .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-  input[type="search"]{
-    flex:1;min-width:200px;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-    background:rgba(10,12,22,.45); color:var(--ink); outline:none
-  }
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
-    background:var(--primary);color:#fff;font-weight:600;cursor:pointer;box-shadow:0 10px 20px color-mix(in srgb,var(--primary),#000 80%);text-decoration:none}
+  input[type="search"]{flex:1;min-width:200px;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(10,12,22,.45);color:var(--ink)}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:var(--primary);color:#fff;font-weight:600;cursor:pointer;box-shadow:0 10px 20px color-mix(in srgb,var(--primary),#000 80%);text-decoration:none}
   .btn.ghost{background:transparent;color:var(--ink)}
   main{padding:18px}
   .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
-  .card{grid-column:span 12;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--card);
-    border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px; box-shadow:var(--shadow)}
-  @media (min-width:760px){ .card.span6{grid-column:span 6} .card.span4{grid-column:span 4} }
-  .title{font-weight:700;font-size:16px}
-  .meta{color:var(--muted);font-size:12px;margin-top:4px}
+  .card{grid-column:span 12;background:linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px;box-shadow:var(--shadow)}
+  @media (min-width:760px){.card.span6{grid-column:span 6}.card.span4{grid-column:span 4}}
+  .title{font-weight:700;font-size:16px}.meta{color:var(--muted);font-size:12px;margin-top:4px}
   .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
   .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);font-size:12px}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace}
@@ -49,74 +35,47 @@
 <header>
   <div class="wrap">
     <h1>Tiny Tools</h1>
-    <p class="sub">Auto-listed mini apps in <span class="mono">/tools</span>. Tap to open, or copy an iframe for your deal room.</p>
+    <p class="sub">Auto-discovers tools in <span class="mono">/tools</span> and one subfolder deep (e.g., <span class="mono">/tools/dealrooms</span>, <span class="mono">/tools/meeting</span>).</p>
     <div class="toolbar">
       <input id="q" type="search" placeholder="Filter tools by name…" />
-      <a class="btn" href="./deal-room-builder.html">✨ Deal Room Builder</a>
-      <a class="btn ghost" href="./meeting-orchestrator.html">🕒 Meeting Orchestrator</a>
+      <a class="btn ghost" href="./">↻ Refresh</a>
     </div>
   </div>
 </header>
 
 <main class="wrap">
   <div id="list" class="grid"></div>
-  <div id="empty" class="empty" style="display:none">No tools found. Add HTML files to <span class="mono">/tools</span>, or create a <span class="mono">tools.json</span> manifest (see code comments).</div>
+  <div id="empty" class="empty" style="display:none">No tools found. Ensure each folder has an <span class="mono">index.html</span> or at least one <span class="mono">.html</span> file.</div>
 </main>
 
 <footer class="wrap">
-  Tip: each card’s <span class="mono">Copy iframe</span> uses the current URL path, so it works for both user sites (<span class="mono">username.github.io</span>) and project sites (<span class="mono">username.github.io/repo</span>).
+  Tip: If the repo is private or API-limited, add a <span class="mono">/tools/tools.json</span> manifest (format below) and we’ll use that.
 </footer>
 
 <script>
-/*
-  HOW IT WORKS
-  1) Attempts to list /tools/ via GitHub API (public repos only).
-  2) If API is rate-limited or blocked, tries a local /tools/tools.json manifest (optional).
-     Example tools.json:
-     [
-       {"path":"deal-room-builder.html","title":"Deal Room Builder","tags":["sales","iframe"]},
-       {"path":"meeting-orchestrator.html","title":"Meeting Orchestrator","tags":["timer","roles"]}
-     ]
-  3) Final fallback: looks for common filenames in /tools/.
-*/
-
 const $ = (s)=>document.querySelector(s);
-const listEl = $("#list");
-const emptyEl = $("#empty");
-const searchEl = $("#q");
-
+const listEl = $("#list"), emptyEl = $("#empty"), searchEl = $("#q");
 const kebabToTitle = s => s.replace(/[-_]+/g,' ').replace(/\.\w+$/,'').replace(/\b\w/g, m=>m.toUpperCase());
 const toAbs = rel => {
   const base = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^\/]*$/, '/');
   return location.origin + base + rel.replace(/^\.\//,'');
 };
-const copy = async (txt, btn) => {
-  try { await navigator.clipboard.writeText(txt); if(btn){const t=btn.textContent; btn.textContent="✔ Copied"; setTimeout(()=>btn.textContent=t,1200);} }
-  catch(e){ prompt("Copy iframe:", txt); }
-};
+const copy = async (txt, btn) => { try{ await navigator.clipboard.writeText(txt); const t=btn.textContent; btn.textContent="✔ Copied"; setTimeout(()=>btn.textContent=t,1200);}catch{ prompt("Copy iframe:", txt);} };
 
 function toolCard({path,title,size,type="file",tags=[]}){
   const url = toAbs(path);
   const nice = title || kebabToTitle(path.split('/').pop());
-  const ext = (path.split('.').pop()||"").toLowerCase();
-  const label = type==="dir" ? "Folder" : ext.toUpperCase();
+  const label = type==="dir" ? "Folder" : (path.split('.').pop()||"HTML").toUpperCase();
   const iframe = `<iframe src="${url}" loading="lazy" allow="fullscreen" style="width:100%;min-height:780px;border:0;border-radius:12px"></iframe>`;
   const el = document.createElement("section");
-  el.className = "card span6";
-  el.dataset.name = nice.toLowerCase();
+  el.className = "card span6"; el.dataset.name = nice.toLowerCase();
   el.innerHTML = `
     <div class="title">${nice}</div>
-    <div class="meta">
-      <span class="pill">${label}</span>
-      ${size ? `<span class="pill">${(size/1024).toFixed(1)} KB</span>` : ""}
-      ${tags && tags.length ? tags.map(t=>`<span class="pill">#${t}</span>`).join(" ") : ""}
-      <div style="margin-top:6px" class="mono">${url}</div>
-    </div>
+    <div class="meta"><span class="pill">${label}</span>${size?` <span class="pill">${(size/1024).toFixed(1)} KB</span>`:""} <div style="margin-top:6px" class="mono">${url}</div></div>
     <div class="row">
       <a class="btn" href="${url}">Open</a>
       <button class="btn ghost" data-copy>📋 Copy iframe</button>
-    </div>
-  `;
+    </div>`;
   el.querySelector("[data-copy]").addEventListener("click", ()=>copy(iframe, el.querySelector("[data-copy]")));
   return el;
 }
@@ -127,109 +86,83 @@ function render(tools){
   emptyEl.style.display="none";
   tools.forEach(t => listEl.appendChild(toolCard(t)));
 }
-
 function filter(){
   const q = (searchEl.value||"").trim().toLowerCase();
-  const cards = listEl.querySelectorAll(".card");
-  let any=false;
-  cards.forEach(c=>{
-    const match = !q || c.dataset.name.includes(q);
-    c.style.display = match ? "" : "none";
-    if(match) any=true;
-  });
-  emptyEl.style.display = any ? "none" : "block";
+  listEl.querySelectorAll(".card").forEach(c=>{ c.style.display = (!q || c.dataset.name.includes(q)) ? "" : "none"; });
+  const shown = [...listEl.querySelectorAll(".card")].some(c=>c.style.display!=="none");
+  emptyEl.style.display = shown ? "none" : "block";
 }
-
 searchEl.addEventListener("input", filter);
 
-/* ---- Data sources ---- */
+/* ---------- GitHub context ---------- */
 function parseUserRepoFromHost(){
-  // user/org site: username.github.io -> repo is path segment 1
-  // project site: username.github.io/<repo>/... -> repo is first path segment
   const owner = location.hostname.split(".")[0];
-  const pathParts = location.pathname.split("/").filter(Boolean);
-  // If first path part is a repo (project site), use it; else it's user site (repo is <owner>.github.io)
-  const repo = pathParts.length ? pathParts[0] : `${owner}.github.io`;
+  const parts = location.pathname.split("/").filter(Boolean);
+  const repo = parts.length ? parts[0] : `${owner}.github.io`; // project vs user site
   return {owner, repo};
 }
+async function ghList(path){ // path relative to repo root
+  const {owner, repo} = parseUserRepoFromHost();
+  const api = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const res = await fetch(api, {cache:"no-store"});
+  if(!res.ok) throw new Error(res.status+" "+res.statusText);
+  return res.json();
+}
 
-async function fetchGitHubDirectory(){
+/* ---------- Discovery: /tools and one level deep ---------- */
+async function discover(){
+  // 1) try GitHub API
   try{
-    const {owner, repo} = parseUserRepoFromHost();
-    // Compute path to /tools relative to repo root
-    // If project site: /<repo>/tools/... → directory is "tools"
-    // If user site and you're literally at /tools/: also "tools"
-    const toolsPath = "tools";
-    const api = `https://api.github.com/repos/${owner}/${repo}/contents/${toolsPath}`;
-    const res = await fetch(api, {cache:"no-store"});
-    if(!res.ok) throw new Error(res.status+" "+res.statusText);
-    const data = await res.json();
-    // Map contents (files + folders)
-    return data
-      .filter(x=> (x.type==="file" && /\.html?$/i.test(x.name)) || x.type==="dir")
-      .map(x=>({
-        path: x.name, // relative to /tools/
-        title: kebabToTitle(x.name),
-        type: x.type,
-        size: x.size
-      }));
+    const root = await ghList("tools");
+    const out = [];
+
+    // Files directly in /tools
+    for(const x of root){
+      if(x.type==="file" && /\.html?$/i.test(x.name)) out.push({path: x.name, title: kebabToTitle(x.name), size:x.size});
+    }
+
+    // One level deep dirs in /tools (e.g., dealrooms, meeting)
+    const dirs = root.filter(x=>x.type==="dir");
+    for(const d of dirs){
+      try{
+        const children = await ghList(`tools/${d.name}`);
+        // Prefer index.html
+        const index = children.find(c=>c.type==="file" && /^index\.html?$/i.test(c.name));
+        if(index){
+          out.push({path: `${d.name}/`, title: kebabToTitle(d.name) + " (index)", size:index.size, type:"dir"});
+          continue;
+        }
+        // Otherwise list all .html files inside
+        children.filter(c=>c.type==="file" && /\.html?$/i.test(c.name)).forEach(c=>{
+          out.push({path: `${d.name}/${c.name}`, title: `${kebabToTitle(d.name)} · ${kebabToTitle(c.name)}`, size:c.size});
+        });
+      }catch(e){ /* ignore subdir errors */ }
+    }
+
+    // Normalize relative to /tools/
+    return out.map(t=>({...t, path: t.path.replace(/^\.\//,'') }));
   }catch(e){
-    console.warn("GitHub API directory listing failed", e);
-    return null;
-  }
-}
-
-async function fetchLocalManifest(){
-  try{
-    const res = await fetch("./tools.json", {cache:"no-store"});
-    if(!res.ok) throw new Error("no manifest");
-    const data = await res.json();
-    return data.map(x=>({
-      path: x.path,
-      title: x.title,
-      tags: x.tags||[],
-      type: x.type|| (x.path.endsWith("/") ? "dir" : "file")
-    }));
-  }catch{ return null; }
-}
-
-async function probeFallbacks(){
-  const candidates = [
-    "index-app.html",
-    "deal-room-builder.html",
-    "meeting-orchestrator.html"
-  ];
-  const found = [];
-  for(const f of candidates){
+    // 2) tools.json manifest (optional)
     try{
-      const r = await fetch(f, {method:"HEAD", cache:"no-store"});
-      if(r.ok) found.push({path:f, title:kebabToTitle(f)});
+      const m = await fetch("./tools.json", {cache:"no-store"});
+      if(m.ok){
+        const data = await m.json();
+        return data.map(x=>({path:x.path, title:x.title, size:x.size||undefined, type:x.type|| (x.path.endsWith("/")?"dir":"file")}));
+      }
     }catch{}
+    // 3) probe a few known files
+    const candidates = ["deal-room-builder.html","meeting-orchestrator.html","index-app.html","dealrooms/index.html","meeting/index.html"];
+    const found = [];
+    for(const f of candidates){ try{ const r=await fetch(f,{method:"HEAD",cache:"no-store"}); if(r.ok) found.push({path:f,title:kebabToTitle(f)});}catch{} }
+    return found;
   }
-  return found;
 }
 
-/* ---- Boot ---- */
+/* ---------- Boot ---------- */
 (async function(){
-  // Prefer GitHub API listing (public repos)
-  let tools = await fetchGitHubDirectory();
-
-  // If rate-limited/private, try local manifest
-  if(!tools || !tools.length){
-    const manifest = await fetchLocalManifest();
-    if(manifest && manifest.length) tools = manifest;
-  }
-
-  // Last resort: probe common filenames
-  if(!tools || !tools.length){
-    tools = await probeFallbacks();
-  }
-
-  // Normalize paths to be relative to /tools/
-  tools = (tools||[]).map(t => ({...t, path: t.path.replace(/^\.\//,'') }));
-
+  const tools = (await discover()) || [];
   render(tools);
-  filter(); // apply empty state if needed
+  filter();
 })();
 </script>
 </body>
