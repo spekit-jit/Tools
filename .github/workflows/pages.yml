@@ -1,52 +1,36 @@
-name: Build & Deploy Pages (tools)
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch: {}
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Copy repo to _site
-        run: |
-          rm -rf _site
-          mkdir -p _site
-          shopt -s dotglob
-          cp -r * _site || true
-
-      - name: Generate tools index inside _site
+      - name: Generate tools index + log
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
+
             const root = path.join('_site','tools');
             if (!fs.existsSync(root)) fs.mkdirSync(root, { recursive: true });
 
-            const entries = fs.existsSync(root) ? fs.readdirSync(root, { withFileTypes: true }) : [];
-            const direct = entries
+            // List _site/tools before generation
+            const list = fs.existsSync(root) ? fs.readdirSync(root, { withFileTypes: true }) : [];
+            core.info(`_site/tools entries: ${list.map(e=> (e.isDirectory()?'[D] ':'[F] ')+e.name).join(', ') || '(empty)'}`);
+
+            // Direct files ending in .html/.htm (exclude index.html)
+            const direct = list
               .filter(e => e.isFile() && /\.html?$/i.test(e.name) && !/^index\.html?$/i.test(e.name))
-              .map(e => e.name).sort((a,b)=>a.localeCompare(b));
-            const subidx = entries
+              .map(e => e.name)
+              .sort((a,b) => a.localeCompare(b));
+
+            // One-level subfolders that contain an index.html/htm
+            const subidx = list
               .filter(e => e.isDirectory())
               .map(d => {
                 const p1 = path.join(root, d.name, 'index.html');
                 const p2 = path.join(root, d.name, 'index.htm');
                 return (fs.existsSync(p1) || fs.existsSync(p2)) ? d.name : null;
               })
-              .filter(Boolean).sort((a,b)=>a.localeCompare(b));
+              .filter(Boolean)
+              .sort((a,b) => a.localeCompare(b));
+
+            core.info(`Direct HTML files: ${direct.length} -> ${direct.join(', ')}`);
+            core.info(`Subfolder index dirs: ${subidx.length} -> ${subidx.join(', ')}`);
 
             const label = s => s.replace(/\.html?$/i,'');
             const hue = s => { let h=2166136261>>>0; for (const ch of s) { h ^= ch.charCodeAt(0); h = Math.imul(h,16777619)>>>0 } return h%360; };
@@ -88,25 +72,10 @@ jobs:
             </div><div class="tiny">Last updated: ${updated} • ${buttons.length} link(s)</div></div></body></html>`;
 
             fs.writeFileSync(path.join(root,'index.html'), html);
-            core.info(`Wrote _site/tools/index.html with ${buttons.length} links`);
+            core.info(`Wrote _site/tools/index.html with ${buttons.length} link(s)`)
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload _site/tools for inspection
+        uses: actions/upload-artifact@v4
         with:
-          path: _site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          name: site-tools-folder
+          path: _site/tools
