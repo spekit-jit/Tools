@@ -42,42 +42,34 @@
   @media (max-width:640px){ a.tool{grid-column:span 2} }
   a.tool:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.30) }
 
-  /* Optional: tiny debug badge shown only with #debug */
-  #dbg{position:fixed;bottom:8px;right:10px;background:rgba(0,0,0,.45);color:#fff;
-       padding:6px 8px;border-radius:8px;font:12px/1.2 ui-monospace,monospace;display:none}
+  /* tiny diagnostics (always visible for now so we can debug quickly) */
+  #dbg{position:fixed;bottom:8px;right:10px;background:rgba(0,0,0,.50);color:#fff;
+       padding:8px 10px;border-radius:10px;font:12px/1.3 ui-monospace,monospace;max-width:60ch;white-space:pre-wrap}
 </style>
 </head>
 <body>
   <div class="board">
     <div id="grid" class="grid"></div>
   </div>
-  <div id="dbg"></div>
+  <div id="dbg">loading…</div>
 
 <script>
-/* ---------- ultra-minimal, auto-updating tools index ---------- */
+/* ===== CONFIG: hard-code your repo (no auto-detection) ===== */
+const OWNER = "spekit-jit";
+const REPO  = "spekit-jit.github.io";      // user site repo
+const TOOLS_PATH = "tools";                 // folder to list
+const API_URL = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${TOOLS_PATH}`;
+const RAW_TOOLS_JSON = "./tools.json";      // fallback manifest path (inside /tools)
+
+/* ===== DOM ===== */
 const grid = document.getElementById("grid");
 const dbg  = document.getElementById("dbg");
-const showDebug = location.hash.includes("debug");
 
-/* User site repo (https://spekit-jit.github.io/tools) */
-function getOwnerRepo(){
-  const owner = location.hostname.split(".")[0];  // "spekit-jit"
-  const repo  = `${owner}.github.io`;            // user-site repo name
-  return { owner, repo };
-}
-
-/* IMPORTANT FIX: always link to /tools/<file>, regardless of trailing slash */
-function toHref(rel){
-  return `${location.origin}/tools/${rel.replace(/^\/+/,'')}`;
-}
-
-/* Pretty button styles */
+/* ===== helpers ===== */
+function toHref(filename){ return `${location.origin}/tools/${filename.replace(/^\/+/,'')}`; }
 function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function hueFromName(name){ return hash(name)%360; }
-function emojiFor(name){
-  const e=["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"];
-  return e[ hash(name) % e.length ];
-}
+function emojiFor(name){ const e=["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"]; return e[ hash(name) % e.length ]; }
 function stripExt(s){ return s.replace(/\.html?$/i,''); }
 
 function makeButton(filename){
@@ -94,51 +86,62 @@ function makeButton(filename){
   return a;
 }
 
-function render(files, sourceLabel){
+function render(files, source){
   grid.innerHTML = '';
   const htmlFiles = files
     .filter(n => /\.html?$/i.test(n))
     .filter(n => !/^index\.html?$/i.test(n))
     .sort((a,b)=>a.localeCompare(b));
-
   htmlFiles.forEach(n => grid.appendChild(makeButton(n)));
-  if (showDebug) { dbg.style.display='block'; dbg.textContent = `${htmlFiles.length} file(s) • ${sourceLabel}`; }
+  dbg.textContent = `${htmlFiles.length} file(s) from ${source}\n` +
+                    `Repo: ${OWNER}/${REPO}\n` +
+                    `API: ${API_URL}`;
 }
 
-/* Data sources */
-async function listViaAPI(){
-  const {owner, repo} = getOwnerRepo();
-  const api = `https://api.github.com/repos/${owner}/${repo}/contents/tools?cb=${Date.now()}`;
-  const res = await fetch(api, {cache:'no-store'});
-  if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
-  const data = await res.json();
-  return data.filter(x => x.type === 'file').map(x => x.name);
-}
-async function listViaManifest(){
+/* ===== data sources ===== */
+async function fetchManifest(){
   try{
-    const res = await fetch('./tools.json', {cache:'no-store'});
-    if(!res.ok) return null;
+    const res = await fetch(RAW_TOOLS_JSON + "?cb=" + Date.now(), {cache:"no-store"});
+    if(!res.ok) throw new Error("manifest " + res.status);
     const arr = await res.json();
-    return arr.map(x => typeof x==='string' ? x : x.path).filter(Boolean);
-  }catch{ return null; }
-}
-
-/* Boot + polling */
-async function refresh(){
-  try{
-    const mf = await listViaManifest();
-    if (mf && mf.length) return render(mf, 'manifest');
-  }catch{}
-  try{
-    const files = await listViaAPI();
-    return render(files, 'GitHub API');
+    const list = arr.map(x => typeof x === "string" ? x : x.path).filter(Boolean);
+    if(!list.length) throw new Error("manifest empty");
+    return list;
   }catch(e){
-    if (showDebug) { dbg.style.display='block'; dbg.textContent = 'error: '+ e.message; }
+    dbg.textContent = `manifest failed: ${e.message}`;
+    return null;
   }
 }
 
-let poll=null;
-function startPolling(){ if(!poll){ poll = setInterval(refresh, 60000); } }
+async function fetchGitHubContents(){
+  let url = API_URL + "?cb=" + Date.now();
+  try{
+    const res = await fetch(url, {cache:"no-store"});
+    dbg.textContent = `GET ${url}\nstatus ${res.status}`;
+    if(!res.ok) throw new Error("api " + res.status);
+    const data = await res.json();
+    const list = data.filter(x => x.type === "file").map(x => x.name);
+    if(!list.length) throw new Error("api empty");
+    return list;
+  }catch(e){
+    dbg.textContent += `\napi failed: ${e.message}`;
+    return null;
+  }
+}
+
+/* ===== boot + auto-refresh ===== */
+async function refresh(){
+  // 1) manifest first (if you set up the Action), then 2) live API
+  let list = await fetchManifest();
+  if(list){ render(list, "manifest"); return; }
+  list = await fetchGitHubContents();
+  if(list){ render(list, "GitHub API"); return; }
+  // nothing worked
+  grid.innerHTML = "";
+}
+
+let timer=null;
+function startPolling(){ if(!timer){ timer=setInterval(refresh, 60000); } }
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refresh(); });
 
 refresh();
