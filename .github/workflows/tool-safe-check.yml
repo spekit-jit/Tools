@@ -1,0 +1,31 @@
+name: Tools Safe Check
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [ main ]
+    paths: [ "tools/**" ]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show tree and list tools/
+        run: |
+          echo "ROOT:"
+          ls -la
+          echo "TOOLS:"
+          mkdir -p tools
+          ls -la tools || true
+          echo "Tracked under tools/:"
+          git ls-files tools || true
+          echo "Find html (direct) and subfolder index:"
+          find tools -maxdepth 1 -type f \( -iname '*.html' -o -iname '*.htm' \) ! -iname 'index.html' -printf '%f\n' | sort -f || true
+          find tools -maxdepth 2 -mindepth 2 -type f \( -iname 'index.html' -o -iname 'index.htm' \) -printf '%P\n' | sort -f || true
+
+      - name: Archive tools folder (what the runner sees)
+        uses: actions/upload-artifact@v4
+        with:
+          name: tools-folder
+          path: tools
