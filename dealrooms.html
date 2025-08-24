@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Deal Room Builder · Mini-Site Generator</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+  :root{
+    --bg: #0f1220;
+    --panel: #15182a;
+    --muted: #a2a8bd;
+    --text: #e9ecf8;
+    --card: #0f1324;
+    --ring: 0 0 0 2px rgba(255,255,255,.08);
+    --primary: #6E56CF; /* default primary (Spekit-ish purple family) */
+    --accent:  #45E7B3;
+    --radius: 14px;
+    --shadow: 0 10px 30px rgba(0,0,0,.35);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f6f7fb; --panel:#ffffff; --card:#ffffff; --text:#0d1226; --muted:#55607a; --shadow:0 10px 24px rgba(16,33,70,.08);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:var(--font);background:radial-gradient(1200px 600px at 10% -10%, rgba(110,86,207,.35), transparent 60%), radial-gradient(800px 400px at 110% 10%, rgba(69,231,179,.25), transparent 60%), var(--bg); color:var(--text);}
+
+  .app{display:grid; grid-template-columns: 420px 1fr; min-height:100svh}
+  @media (max-width: 980px){ .app{grid-template-columns: 1fr} .right{order:-1} }
+
+  .left{position:relative; padding:20px; background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)) , var(--panel); border-right:1px solid rgba(255,255,255,.06)}
+  .right{padding:20px; overflow:auto}
+
+  .h1{font-weight:700; letter-spacing:.2px; font-size:20px; margin:2px 0 14px}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:16px}
+
+  .form{display:grid; gap:12px}
+  .section{padding:14px; border:1px solid rgba(255,255,255,.08); background:linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--card); border-radius:var(--radius)}
+  .section h2{font-size:14px; margin:0 0 10px; letter-spacing:.3px}
+  .grid{display:grid; gap:10px}
+  .two{grid-template-columns: 1fr 1fr}
+  .three{grid-template-columns: 1fr 1fr 1fr}
+  @media (max-width: 520px){ .two,.three{grid-template-columns:1fr} }
+
+  label{font-size:12px; color:var(--muted); display:block; margin:4px 0 6px}
+  input[type="text"], input[type="url"], input[type="date"], input[type="color"], textarea{
+    width:100%; padding:12px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(10,12,22,.55);
+    color:var(--text); outline:none; transition:.2s border, .2s background;
+  }
+  input[type="color"]{height:40px; padding:2px; background:transparent; border-radius:10px}
+  textarea{min-height:92px; resize:vertical}
+  input::placeholder, textarea::placeholder{color:rgba(200,208,230,.6)}
+
+  .btn{
+    display:inline-flex; align-items:center; gap:10px; border:none; cursor:pointer; padding:12px 14px; border-radius:12px;
+    background:linear-gradient(180deg, color-mix(in srgb, var(--primary), white 6%), var(--primary));
+    color:white; font-weight:600; letter-spacing:.2px; box-shadow:0 12px 20px color-mix(in srgb, var(--primary), black 80%);
+  }
+  .btn.secondary{background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.14)}
+  .btn.small{padding:9px 10px; font-weight:600; font-size:12px}
+
+  .actions{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+
+  /* Preview microsite frame */
+  .previewWrap{max-width:1100px; margin-inline:auto; display:grid; gap:16px}
+  .frame{background:var(--panel); border-radius:18px; box-shadow:var(--shadow); overflow:hidden; border:1px solid rgba(255,255,255,.08)}
+  .hero{
+    padding:28px; background:
+      radial-gradient(650px 250px at 0% 0%, color-mix(in srgb, var(--primary), transparent 70%), transparent 65%),
+      radial-gradient(650px 250px at 100% 0%, color-mix(in srgb, var(--accent), transparent 70%), transparent 65%),
+      linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0));
+    display:flex; gap:16px; align-items:center; border-bottom:1px solid rgba(255,255,255,.06)
+  }
+  .logo{width:48px; height:48px; border-radius:12px; background:rgba(255,255,255,.06); display:grid; place-items:center; overflow:hidden}
+  .logo img{width:100%; height:100%; object-fit:cover}
+  .title{font-size:20px; font-weight:700; letter-spacing:.2px}
+  .meta{color:var(--muted); font-size:12px}
+  .pill{display:inline-flex; gap:6px; align-items:center; padding:6px 10px; background:rgba(255,255,255,.06); border-radius:999px; font-size:12px}
+  .ctaBar{display:flex; gap:8px; flex-wrap:wrap; padding:12px 16px; border-top:1px solid rgba(255,255,255,.06); background:linear-gradient(180deg, rgba(255,255,255,.02), transparent)}
+  .ctaBar a{display:inline-flex; align-items:center; gap:8px; text-decoration:none; background:var(--primary); color:#fff; padding:10px 12px; border-radius:10px; font-weight:600}
+  .ctaBar a.secondary{background:transparent; color:var(--text); border:1px solid rgba(255,255,255,.15)}
+
+  .cards{display:grid; grid-template-columns: repeat(12, 1fr); gap:14px; padding:16px}
+  .card{grid-column: span 12; background:linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--card); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:16px}
+  .card h3{margin:0 0 8px; font-size:14px; letter-spacing:.3px}
+  .card p{margin:0; color:var(--text); line-height:1.5}
+  .list{display:grid; gap:8px; margin-top:8px}
+  .li{display:flex; gap:8px; align-items:flex-start}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--accent); margin-top:6px; flex:0 0 10px}
+
+  @media (min-width: 760px){
+    .card.span6{grid-column: span 6}
+    .card.span4{grid-column: span 4}
+  }
+
+  .footerNote{padding:14px 16px; color:var(--muted); font-size:12px; border-top:1px dashed rgba(255,255,255,.12)}
+  .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size:12px}
+  .note{color:var(--muted); font-size:12px}
+
+  .kbd{border:1px solid rgba(255,255,255,.2); border-bottom-width:2px; padding:2px 6px; border-radius:6px; font-family:ui-monospace}
+  .badge{background:rgba(255,255,255,.1); padding:2px 8px; border-radius:999px; font-size:11px}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Builder Form -->
+    <div class="left">
+      <div class="h1">Deal Room Builder</div>
+      <div class="sub">Fill the fields → live preview updates → download a <span class="badge">single HTML</span> mini-site you can host on GitHub Pages or iframe into a deal room.</div>
+
+      <div class="form">
+        <div class="section">
+          <h2>Branding</h2>
+          <div class="grid two">
+            <div>
+              <label>Company / Customer Name</label>
+              <input id="company" type="text" placeholder="Acme Corp" />
+            </div>
+            <div>
+              <label>Deal Title</label>
+              <input id="dealTitle" type="text" placeholder="Enablement Platform Rollout" />
+            </div>
+          </div>
+          <div class="grid two">
+            <div>
+              <label>Primary Color</label>
+              <input id="primaryColor" type="color" value="#6E56CF" />
+            </div>
+            <div>
+              <label>Accent Color</label>
+              <input id="accentColor" type="color" value="#45E7B3" />
+            </div>
+          </div>
+          <div class="grid two">
+            <div>
+              <label>Upload Logo (square works best)</label>
+              <input id="logoFile" type="file" accept="image/*" />
+            </div>
+            <div>
+              <label>Favicon Emoji (optional)</label>
+              <input id="faviconEmoji" type="text" placeholder="✨" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Deal Metadata</h2>
+          <div class="grid three">
+            <div>
+              <label>Deal Value</label>
+              <input id="value" type="text" placeholder="$250,000" />
+            </div>
+            <div>
+              <label>Stage</label>
+              <input id="stage" type="text" placeholder="Evaluation" />
+            </div>
+            <div>
+              <label>Target Close Date</label>
+              <input id="closeDate" type="date" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Content</h2>
+          <label>Executive Overview</label>
+          <textarea id="overview" placeholder="One paragraph that frames the problem, proposed solution, and success criteria."></textarea>
+
+          <div class="grid two">
+            <div>
+              <label>Timeline (one item per line; use YYYY-MM-DD | Milestone)</label>
+              <textarea id="timeline" placeholder="2025-09-01 | Kickoff&#10;2025-09-15 | Pilot launch&#10;2025-10-10 | Training complete"></textarea>
+            </div>
+            <div>
+              <label>Team / Contacts (one per line; Name - Role - Email/Link)</label>
+              <textarea id="team" placeholder="Jordan Lee - Project Lead - jordan@example.com&#10;Priya Shah - Enablement - https://cal.com/priya"></textarea>
+            </div>
+          </div>
+
+          <div class="grid two">
+            <div>
+              <label>Resources (one per line; Label | URL)</label>
+              <textarea id="resources" placeholder="ROI Calculator | https://example.com/roi&#10;Security FAQ | https://example.com/security"></textarea>
+            </div>
+            <div>
+              <label>FAQ (one per line; Q? A.)</label>
+              <textarea id="faq" placeholder="How is data stored? Data is hosted in ...&#10;What support is included? Standard support includes ..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Calls to Action</h2>
+          <div class="grid two">
+            <div>
+              <label>Primary CTA Label</label>
+              <input id="ctaLabel" type="text" placeholder="Book Final Review" />
+            </div>
+            <div>
+              <label>Primary CTA URL</label>
+              <input id="ctaUrl" type="url" placeholder="https://cal.com/yourteam/final-review" />
+            </div>
+          </div>
+          <div class="grid two">
+            <div>
+              <label>Secondary CTA Label (optional)</label>
+              <input id="cta2Label" type="text" placeholder="Request Redlines" />
+            </div>
+            <div>
+              <label>Secondary CTA URL</label>
+              <input id="cta2Url" type="url" placeholder="https://example.com/redlines" />
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h2>Export</h2>
+          <div class="actions">
+            <button id="downloadBtn" class="btn">⬇️ Download Microsite (.html)</button>
+            <button id="copyEmbedBtn" class="btn secondary">📋 Copy iframe Snippet</button>
+            <span class="note">Host on GitHub Pages → paste the URL into your deal room’s iframe/module.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: Live Preview -->
+    <div class="right">
+      <div class="previewWrap">
+        <div class="frame" id="preview">
+          <!-- Injected preview will render here -->
+        </div>
+        <div class="footerNote">
+          Tip: Inside Salesforce/Notion/your platform, use:
+          <span class="kbd mono">&lt;iframe src="https://your-site.github.io/path/deal-room.html" allow="fullscreen" loading="lazy" style="width:100%;min-height:720px;border:0;border-radius:12px"&gt;&lt;/iframe&gt;</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+/* ---------- Helpers ---------- */
+const $ = (id) => document.getElementById(id);
+
+let logoDataURL = ""; // embedded as data URI
+
+$("logoFile").addEventListener("change", async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => { logoDataURL = reader.result; renderPreview(); };
+  reader.readAsDataURL(f);
+});
+
+const inputs = [
+  "company","dealTitle","value","stage","closeDate","overview",
+  "timeline","team","resources","faq",
+  "ctaLabel","ctaUrl","cta2Label","cta2Url","primaryColor","accentColor","faviconEmoji"
+];
+
+inputs.forEach(id => $(id).addEventListener("input", renderPreview));
+
+function parseLines(raw, splitter) {
+  return raw.split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(row => {
+    const [a, b] = row.split(splitter).map(s=>s?.trim());
+    return {a,b,row};
+  });
+}
+
+function escapeHTML(s=""){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function formatDate(d){
+  if(!d) return "";
+  try{
+    const dt = new Date(d+"T12:00:00");
+    return dt.toLocaleDateString(undefined, {year:"numeric", month:"short", day:"numeric"});
+  }catch{ return d; }
+}
+
+function collectData(){
+  return {
+    company: $("company").value.trim(),
+    dealTitle: $("dealTitle").value.trim(),
+    value: $("value").value.trim(),
+    stage: $("stage").value.trim(),
+    closeDate: $("closeDate").value,
+    overview: $("overview").value.trim(),
+    timeline: parseLines($("timeline").value, "|"),
+    team: $("team").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),
+    resources: parseLines($("resources").value, "|"),
+    faq: $("faq").value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean),
+    ctaLabel: $("ctaLabel").value.trim(),
+    ctaUrl: $("ctaUrl").value.trim(),
+    cta2Label: $("cta2Label").value.trim(),
+    cta2Url: $("cta2Url").value.trim(),
+    primary: $("primaryColor").value,
+    accent: $("accentColor").value,
+    faviconEmoji: $("faviconEmoji").value.trim() || "✨",
+    logoDataURL
+  };
+}
+
+function renderPreview(){
+  const d = collectData();
+  $("preview").innerHTML = micrositeInnerHTML(d, true);
+  // live-apply palette to page shell so preview matches
+  document.documentElement.style.setProperty("--primary", d.primary || "#6E56CF");
+  document.documentElement.style.setProperty("--accent", d.accent || "#45E7B3");
+}
+
+function micrositeInnerHTML(d, isPreview=false){
+  const company = escapeHTML(d.company || "Acme Corp");
+  const title = escapeHTML(d.dealTitle || "Enablement Platform Rollout");
+  const value = escapeHTML(d.value || "$250,000");
+  const stage = escapeHTML(d.stage || "Evaluation");
+  const date = d.closeDate ? formatDate(d.closeDate) : "TBD";
+
+  const overview = (d.overview || "Add an executive overview to align outcomes and timelines.");
+
+  const timeline = (d.timeline.length
+    ? d.timeline.map(({a,b}) => {
+        const left = (a||"TBD");
+        const right = escapeHTML(b||"");
+        return `<div class="li"><div class="dot"></div><div><div class="mono">${escapeHTML(left)}</div><div>${right}</div></div></div>`;
+      }).join("")
+    : `<div class="note">Add timeline items like <span class="mono">2025-09-01 | Kickoff</span></div>`);
+
+  const team = (d.team.length
+    ? d.team.map(line=>{
+        const parts = line.split(" - ").map(s=>s.trim());
+        const [name, role, contact] = [parts[0]||"", parts[1]||"", parts[2]||""];
+        const safeName = escapeHTML(name), safeRole = escapeHTML(role);
+        let contactHtml = contact ? (contact.startsWith("http") ? `<a href="${escapeHTML(contact)}" target="_blank" rel="noopener">Link</a>` :
+          (/\S+@\S+/.test(contact) ? `<a href="mailto:${escapeHTML(contact)}">${escapeHTML(contact)}</a>` :
+           escapeHTML(contact))) : "";
+        return `<div class="li"><div class="dot" style="background:var(--primary)"></div><div><div><strong>${safeName}</strong> • ${safeRole}</div><div class="note">${contactHtml}</div></div></div>`;
+      }).join("")
+    : `<div class="note">List project contacts like <span class="mono">Jordan Lee - Project Lead - jordan@example.com</span></div>`);
+
+  const resources = (d.resources.length
+    ? d.resources.map(({a,b})=>{
+        const label = escapeHTML(a||"Resource");
+        const url = (b||"").trim();
+        const href = url ? `href="${escapeHTML(url)}"` : "";
+        return `<a class="pill" ${href} target="_blank" rel="noopener">🔗 ${label}</a>`;
+      }).join(" ")
+    : `<span class="note">Add “Label | URL” lines to show quick links.</span>`);
+
+  const faq = (d.faq.length
+    ? `<div class="list">${
+        d.faq.map(row=>{
+          let [q,a] = row.split("?").length>1 ? [row.split("?")[0]+"?", row.split("?").slice(1).join("?")] : [row,""];
+          q = escapeHTML(q.trim()); a = escapeHTML(a.trim().replace(/^\s*[.-]\s*/,''));
+          return `<details class="card"><summary><strong>${q}</strong></summary><div class="note" style="margin-top:8px">${a||""}</div></details>`;
+        }).join("")
+      }</div>`
+    : `<div class="note">Add FAQ lines as <span class="mono">Question? Answer.</span></div>`);
+
+  const logo = d.logoDataURL ? `<img src="${d.logoDataURL}" alt="logo" />` : `<span>🏷️</span>`;
+
+  const ctas = `
+    ${d.ctaLabel && d.ctaUrl ? `<a href="${escapeHTML(d.ctaUrl)}" target="_blank" rel="noopener">✅ ${escapeHTML(d.ctaLabel)}</a>`:""}
+    ${d.cta2Label && d.cta2Url ? `<a class="secondary" href="${escapeHTML(d.cta2Url)}" target="_blank" rel="noopener">📝 ${escapeHTML(d.cta2Label)}</a>`:""}
+  `;
+
+  return `
+  <style>
+    :root{ --primary:${d.primary||"#6E56CF"}; --accent:${d.accent||"#45E7B3"} }
+  </style>
+  <header class="hero">
+    <div class="logo">${logo}</div>
+    <div style="flex:1">
+      <div class="title">${company} • ${title}</div>
+      <div class="meta">Value: <span class="pill">💸 ${value}</span> &nbsp; Stage: <span class="pill">📈 ${stage}</span> &nbsp; Target Close: <span class="pill">📅 ${date}</span></div>
+    </div>
+  </header>
+  <div class="cards">
+    <section class="card span6">
+      <h3>Executive Overview</h3>
+      <p>${escapeHTML(overview)}</p>
+    </section>
+
+    <section class="card span6">
+      <h3>Timeline</h3>
+      <div class="list">${timeline}</div>
+    </section>
+
+    <section class="card span4">
+      <h3>Team</h3>
+      <div class="list">${team}</div>
+    </section>
+
+    <section class="card span4">
+      <h3>Resources</h3>
+      <div class="list" style="display:flex; flex-wrap:wrap; gap:8px">${resources}</div>
+    </section>
+
+    <section class="card span4">
+      <h3>FAQ</h3>
+      ${faq}
+    </section>
+  </div>
+  <div class="ctaBar">
+    ${ctas || `<span class="note">Add a CTA to guide next steps.</span>`}
+  </div>
+  <div class="footerNote">
+    <span class="mono">This mini-site is iframe-friendly, responsive, and stores no cookies.</span>
+  </div>
+  ${isPreview ? "" : `<script>
+    // no additional JS required inside the exported microsite
+    // it is fully static and iframe-friendly
+  <\/script>`}
+  `;
+}
+
+function buildFullMicrositeFile(d){
+  // Standalone HTML with embedded CSS styles similar to preview shell (trimmed, no builder controls)
+  const inner = micrositeInnerHTML(d, false);
+  const favicon = d.faviconEmoji || "✨";
+  const css = document.querySelector("style").textContent; // reuse top styles
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${escapeHTML(d.company || "Deal Room")} · ${escapeHTML(d.dealTitle || "Mini-Site")}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' height='64' width='64'%3E%3Ctext y='50' font-size='50'%3E${encodeURIComponent(favicon)}%3C/text%3E%3C/svg%3E" />
+<meta name="color-scheme" content="light dark" />
+<style>${css}</style>
+<style>
+  /* tighten body bg glare a bit in exported file */
+  body{background:radial-gradient(1000px 500px at 10% -10%, color-mix(in srgb, var(--primary), transparent 70%), transparent 60%), radial-gradient(700px 350px at 110% 10%, color-mix(in srgb, var(--accent), transparent 78%), transparent 60%), var(--bg);}
+  .app{display:block}
+  .right{padding:0}
+  .frame{border-radius:0}
+  .footerNote{border:none}
+</style>
+</head>
+<body>
+  <div class="frame">
+    ${inner}
+  </div>
+</body>
+</html>`;
+}
+
+/* ---------- Export & Embed ---------- */
+$("downloadBtn").addEventListener("click", () => {
+  const d = collectData();
+  const html = buildFullMicrositeFile(d);
+  const blob = new Blob([html], {type: "text/html"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  const safeCompany = (d.company || "deal").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  const safeTitle = (d.dealTitle || "room").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+  a.href = url;
+  a.download = `${safeCompany}-${safeTitle}.html`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+});
+
+$("copyEmbedBtn").addEventListener("click", async () => {
+  const placeholder = `<!-- Replace SRC with your GitHub Pages URL -->
+<iframe src="https://YOUR-USERNAME.github.io/YOUR-REPO/PATH/your-deal-room.html"
+  loading="lazy" allow="fullscreen"
+  style="width:100%;min-height:780px;border:0;border-radius:12px;overflow:hidden"></iframe>`;
+  try{
+    await navigator.clipboard.writeText(placeholder);
+    $("copyEmbedBtn").textContent = "✔️ Copied iframe Snippet";
+    setTimeout(()=>{$("copyEmbedBtn").textContent = "📋 Copy iframe Snippet";}, 1800);
+  }catch{
+    prompt("Copy this iframe snippet:", placeholder);
+  }
+});
+
+/* ---------- Initial Preview ---------- */
+renderPreview();
+</script>
+</body>
+</html>
