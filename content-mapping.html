@@ -14,9 +14,11 @@
   }
   @media (prefers-color-scheme: light){
     :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1528; --muted:#5b668a; --ring:rgba(0,0,0,.18) }
-    .parent{ background:linear-gradient(180deg, rgba(0,0,0,.03), transparent), #f0f2f5; }
-    .act{ background:#e0e4f0; }
-    .chip .mini{ background:#d8dcf0; }
+    .parent{ background:linear-gradient(180deg, rgba(0,0,0,.03), transparent), #f0f2f5; border:1px solid rgba(0,0,0,.12); }
+    .act{ background:#e0e4f0; color:#333; border:1px solid rgba(0,0,0,.15); }
+    .chip{ background:linear-gradient(180deg, rgba(0,0,0,.03), transparent); border:1px solid rgba(0,0,0,.12); }
+    .chip .mini{ background:#d8dcf0; color:#333; border:1px solid rgba(0,0,0,.15); }
+    .btn{ border:1px solid rgba(0,0,0,.15); color:#333; box-shadow:0 8px 16px rgba(0,0,0,.15); }
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -35,7 +37,7 @@
   }
 
   /* Header */
-  .bar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .bar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap}
   .ghost{appearance:none;border:1px solid var(--ring);background:transparent;color:var(--ink);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer}
   .primary{appearance:none;border:1px solid var(--ring);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 24px rgba(110,86,207,.35)}
   .ghost:hover,.primary:hover{filter:brightness(1.05)}
@@ -45,18 +47,19 @@
     position: relative;
     background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
     border:1px solid rgba(255,255,255,.12);
-    border-radius:14px; padding:14px; margin:12px 0;
+    border-radius:14px; padding:14px; margin:24px 0;
+    transition: all 0.3s ease;
   }
   .parent-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
   .btn{
-    display:inline-flex; align-items:center; gap:8px; padding:10px 12px; min-height:44px;
+    display:inline-flex; align-items:center; gap:8px; padding:10px 16px; min-height:44px;
     border-radius:12px; border:1px solid rgba(255,255,255,.15);
     color:#fff; font-weight:800; text-decoration:none; cursor:text;
     box-shadow:0 12px 24px rgba(0,0,0,.25);
-    outline:none;
+    outline:none; white-space: pre-wrap; max-width: 300px; text-align: center;
   }
   .btn.small{
-    min-height:38px; padding:8px 10px; font-weight:700;
+    min-height:38px; padding:8px 12px; font-weight:700; max-width: 200px;
   }
   .btn[contenteditable="true"]{
     caret-color:currentColor;
@@ -67,48 +70,61 @@
   .act{
     display:inline-flex; align-items:center; justify-content:center;
     width:40px; height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.15);
-    background:#1a1f3a; color:#fff; cursor:pointer; font-weight:900;
+    background:#1a1f3a; color:#fff; cursor:pointer; font-weight:900; transition: transform 0.2s;
   }
-  .act:hover{filter:brightness(1.05)}
+  .act:hover{filter:brightness(1.05); transform: scale(1.05);}
   .act-row{display:flex; gap:8px; align-items:center}
 
   /* Subtopic grid under each parent */
-  .subs{ margin-top:12px; display:grid; grid-auto-rows:auto; gap:8px }
-  .subs-row{ display:grid; grid-auto-flow:column; gap:8px; align-items:start }
+  .subs{ margin-top:16px; display:grid; grid-auto-rows:auto; gap:12px }
+  .subs-row{ display:grid; grid-auto-flow:column; gap:12px; align-items:start; justify-content: start; }
   .chip{
-    display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
+    display:flex; flex-direction: column; align-items:center; gap:4px;
     background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
-    border:1px solid rgba(255,255,255,.12); padding:6px; border-radius:12px;
+    border:1px solid rgba(255,255,255,.12); padding:8px; border-radius:14px; transition: all 0.3s ease;
   }
-  .chip .btn{ flex:1; min-width:120px }
+  .chip:hover { box-shadow: 0 4px 12px rgba(0,0,0,.25); }
+  .chip .btn{ flex:none; text-align:center; }
+  .chip .actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
   .chip .mini{
     display:inline-flex; align-items:center; justify-content:center;
-    width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
-    background:#171b33; color:#fff; cursor:pointer; font-weight:900;
+    width:32px; height:32px; border-radius:8px; border:1px solid rgba(255,255,255,.15);
+    background:#171b33; color:#fff; cursor:pointer; font-weight:900; font-size:14px; transition: transform 0.2s;
   }
-  .mini:hover{filter:brightness(1.07)}
+  .mini:hover{filter:brightness(1.07); transform: scale(1.05);}
 
   .tiny{color:var(--muted); font-size:12px; margin-top:6px}
+  @keyframes fadeIn { from {opacity:0; transform: translateY(10px);} to {opacity:1; transform: translateY(0);} }
+  .new-item { animation: fadeIn 0.3s ease; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="bar">
     <button id="addParent" class="primary">+ Add parent topic</button>
+    <button id="clearBtn" class="ghost" title="Clear the entire map">🗑 Clear</button>
     <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map to clipboard">📋 Copy JSON</button>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic to the last row. Sub-topic arrows add to the ← left, ↑ above (new row), → right, or ⬇ below (new row). Use × to delete. Lines connect parent to subs for hierarchy.</div>
+  <div class="tiny">Tip: Click any pill to edit. Parent “+” adds a sub-topic to the last row. Sub-topic buttons below: add ← left, ↑ above (new row), → right, ⬇ below (new row), or × delete. Changes auto-save to browser storage. Lines connect hierarchy sleekly.</div>
 </div>
 
 <script>
-/* ============ Color utilities (deterministic per element) ============ */
+/* ============ Utilities ============ */
 function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function hueFrom(s){ return hash(s) % 360; }
 function colorFor(key, lighten=0){
   const h = hueFrom(key);
   const l1 = 48 + lighten, l2 = 42 + lighten;
   return `linear-gradient(180deg, hsl(${h} 75% ${l1}%), hsl(${(h+22)%360} 82% ${l2}%))`;
+}
+
+function debounce(fn, ms=200) {
+  let timeout;
+  return function() {
+    clearTimeout(timeout);
+    timeout = setTimeout(fn, ms);
+  };
 }
 
 /* ============ DOM helpers ============ */
@@ -118,7 +134,7 @@ function makeEditablePill(text, key, small=false){
   el.contentEditable = 'true';
   el.spellcheck = false;
   el.textContent = text;
-  el.style.background = colorFor(key, small?0:0);
+  el.style.background = colorFor(key, small?5:0); // lighten subs a bit
   el.addEventListener('focus', () => {
     if((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text){
       const range = document.createRange();
@@ -135,11 +151,16 @@ function makeEditablePill(text, key, small=false){
 
 /* ============ Model ============ */
 let parentId = 0;
+let parents = [];
 function newParentModel(){
-  return { id: `p${++parentId}`, title: 'parent topic', rows: [] };
+  return { id: `p${++parentId}`, title: 'parent topic', rows: [[]] };
 }
 function newSubModel(){
   return { id: `s${Math.random().toString(36).slice(2,8)}`, title: 'sub-topic' };
+}
+
+function saveAll() {
+  localStorage.setItem('topicMap', JSON.stringify(parents));
 }
 
 /* ============ Renderers ============ */
@@ -157,10 +178,11 @@ function renderParent(model){
   svg.style.width = '100%';
   svg.style.height = '100%';
   svg.style.pointerEvents = 'none';
+  svg.style.overflow = 'visible';
 
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
   const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-  grad.id = 'lineGrad';
+  grad.id = 'lineGrad' + model.id;
   grad.setAttribute('x1', '0%');
   grad.setAttribute('y1', '0%');
   grad.setAttribute('x2', '0%');
@@ -180,10 +202,217 @@ function renderParent(model){
   head.className = 'parent-head';
 
   const pill = makeEditablePill(model.title, model.id);
-  pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'parent topic');
-  pill.addEventListener('blur', ()=> pill.textContent = model.title);
+  pill.addEventListener('input', () => { model.title = pill.textContent.trim() || 'parent topic'; saveAll(); });
+  pill.addEventListener('blur', () => { pill.textContent = model.title; drawLines(); });
   head.appendChild(pill);
 
   const addSub = document.createElement('button');
   addSub.className = 'act';
-  addSub.title = 'Add sub-topic
+  addSub.title = 'Add sub-topic to the last row';
+  addSub.textContent = '+';
+  addSub.addEventListener('click', () => {
+    if(model.rows.length === 0) model.rows.push([]);
+    const rowIndex = model.rows.length - 1;
+    const newSub = newSubModel();
+    model.rows[rowIndex].push(newSub);
+    renderSubs(newSub.id);
+    saveAll();
+  });
+  head.appendChild(addSub);
+
+  const deleteParent = document.createElement('button');
+  deleteParent.className = 'act';
+  deleteParent.title = 'Delete this parent topic';
+  deleteParent.textContent = '×';
+  deleteParent.addEventListener('click', () => {
+    if(confirm('Delete this parent topic and all its sub-topics?')) {
+      const index = parents.findIndex(p => p.id === model.id);
+      if(index > -1) parents.splice(index, 1);
+      board.removeChild(wrap);
+      saveAll();
+    }
+  });
+  head.appendChild(deleteParent);
+
+  const subs = document.createElement('div');
+  subs.className = 'subs';
+
+  function renderSubs(newId = null) {
+    subs.innerHTML = '';
+    svg.innerHTML = '';
+    svg.appendChild(defs);
+    model.rows = model.rows.filter(row => row.length > 0);
+    model.rows.forEach((row, rIndex) => {
+      const rowEl = document.createElement('div');
+      rowEl.className = 'subs-row';
+      row.forEach((sub, cIndex) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        if(newId === sub.id) chip.classList.add('new-item');
+
+        const sp = makeEditablePill(sub.title, sub.id, true);
+        sp.addEventListener('input', () => { sub.title = sp.textContent.trim() || 'sub-topic'; saveAll(); });
+        sp.addEventListener('blur', () => { sp.textContent = sub.title; drawLines(); });
+        chip.appendChild(sp);
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const left = document.createElement('button');
+        left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
+        left.addEventListener('click', () => {
+          const newSub = newSubModel();
+          row.splice(cIndex, 0, newSub);
+          renderSubs(newSub.id);
+          saveAll();
+        });
+
+        const up = document.createElement('button');
+        up.className = 'mini'; up.title = 'Add sub-topic on a new row above'; up.textContent = '↑';
+        up.addEventListener('click', () => {
+          const newRow = [newSubModel()];
+          model.rows.splice(rIndex, 0, newRow);
+          renderSubs(newRow[0].id);
+          saveAll();
+        });
+
+        const right = document.createElement('button');
+        right.className = 'mini'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
+        right.addEventListener('click', () => {
+          const newSub = newSubModel();
+          row.splice(cIndex + 1, 0, newSub);
+          renderSubs(newSub.id);
+          saveAll();
+        });
+
+        const down = document.createElement('button');
+        down.className = 'mini'; down.title = 'Add sub-topic on a new row below'; down.textContent = '⬇';
+        down.addEventListener('click', () => {
+          const newRow = [newSubModel()];
+          model.rows.splice(rIndex + 1, 0, newRow);
+          renderSubs(newRow[0].id);
+          saveAll();
+        });
+
+        const del = document.createElement('button');
+        del.className = 'mini'; del.title = 'Delete this sub-topic'; del.textContent = '×';
+        del.addEventListener('click', () => {
+          if(confirm('Delete this sub-topic?')) {
+            row.splice(cIndex, 1);
+            renderSubs();
+            saveAll();
+          }
+        });
+
+        actions.append(left, up, right, down, del);
+        chip.appendChild(actions);
+        rowEl.appendChild(chip);
+      });
+      subs.appendChild(rowEl);
+    });
+    drawLines();
+    if(newId) {
+      const newPill = subs.querySelector(`.btn.small[data-id="${newId}"]`) || subs.querySelector('.new-item .btn.small');
+      if(newPill) newPill.focus();
+    }
+  }
+
+  function drawLines(){
+    const wrapRect = wrap.getBoundingClientRect();
+    const parentRect = pill.getBoundingClientRect();
+    const parentCenterX = parentRect.left - wrapRect.left + parentRect.width / 2;
+    const parentBottomY = parentRect.bottom - wrapRect.top + 8; // offset
+
+    const subPills = subs.querySelectorAll('.btn.small');
+    subPills.forEach(sp => {
+      const spRect = sp.getBoundingClientRect();
+      const spCenterX = spRect.left - wrapRect.left + spRect.width / 2;
+      const spTopY = spRect.top - wrapRect.top - 8; // offset
+      const midY = (parentBottomY + spTopY) / 2;
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M${parentCenterX} ${parentBottomY} C ${parentCenterX} ${midY}, ${spCenterX} ${midY}, ${spCenterX} ${spTopY}`);
+      path.setAttribute('stroke', `url(#lineGrad${model.id})`);
+      path.setAttribute('stroke-width', '2');
+      path.setAttribute('stroke-opacity', '0.5');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('fill', 'none');
+      svg.appendChild(path);
+    });
+  }
+
+  renderSubs();
+
+  const resizeObserver = new ResizeObserver(debounce(() => {
+    renderSubs();
+  }));
+  resizeObserver.observe(wrap);
+
+  wrap.append(svg, head, subs);
+  return wrap;
+}
+
+function addParent(focus = true){
+  const model = newParentModel();
+  parents.push(model);
+  const node = renderParent(model);
+  board.appendChild(node);
+  saveAll();
+  if(focus) {
+    const pill = node.querySelector('.btn');
+    pill.focus();
+  }
+}
+
+/* ============ Export ============ */
+function exportJSON(){
+  const data = parents.map(model => ({
+    title: model.title,
+    rows: model.rows.map(row => row.map(sub => sub.title))
+  }));
+  const json = JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    alert('JSON copied to clipboard!');
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+  });
+}
+
+/* ============ Clear ============ */
+function clearMap(){
+  if(confirm('Clear the entire map? This cannot be undone.')) {
+    board.innerHTML = '';
+    parents = [];
+    localStorage.removeItem('topicMap');
+    parentId = 0;
+    addParent();
+  }
+}
+
+/* ============ Load from storage ============ */
+function loadFromStorage(){
+  const saved = localStorage.getItem('topicMap');
+  if(saved) {
+    try {
+      const loadedParents = JSON.parse(saved);
+      loadedParents.forEach(model => {
+        parentId = Math.max(parentId, parseInt(model.id.slice(1)) || 0);
+        parents.push(model);
+        const node = renderParent(model);
+        board.appendChild(node);
+      });
+    } catch(e) {
+      console.error('Failed to load map:', e);
+    }
+  }
+  if(parents.length === 0) addParent(false);
+}
+
+/* ============ Wire up ============ */
+document.getElementById('addParent').addEventListener('click', () => addParent());
+document.getElementById('exportBtn').addEventListener('click', exportJSON);
+document.getElementById('clearBtn').addEventListener('click', clearMap);
+loadFromStorage();
+</script>
+</body>
+</html>
