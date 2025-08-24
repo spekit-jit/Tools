@@ -140,26 +140,31 @@ function debounce(fn, ms = 200) {
 
 /* ============ DOM helpers ============ */
 function makeEditablePill(text, key, small = false) {
-  const el = document.createElement('div');
-  el.className = 'btn' + (small ? ' small' : '');
-  el.dataset.id = key;
-  el.contentEditable = 'true';
-  el.spellcheck = false;
-  el.textContent = text;
-  el.style.background = colorFor(key, small ? 5 : 0);
-  el.addEventListener('focus', () => {
-    if ((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text) {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      const sel = window.getSelection();
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-  });
-  el.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
-  });
-  return el;
+  try {
+    const el = document.createElement('div');
+    el.className = 'btn' + (small ? ' small' : '');
+    el.dataset.id = key;
+    el.contentEditable = 'true';
+    el.spellcheck = false;
+    el.textContent = text;
+    el.style.background = colorFor(key, small ? 5 : 0);
+    el.addEventListener('focus', () => {
+      if ((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text) {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      }
+    });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+    });
+    return el;
+  } catch (e) {
+    console.error('Failed to create editable pill:', e);
+    return null;
+  }
 }
 
 /* ============ Model ============ */
@@ -178,11 +183,16 @@ function saveAll() {
     console.log('Map saved to localStorage');
   } catch (e) {
     console.error('Failed to save map:', e);
+    alert('Error saving map. LocalStorage may be full or disabled.');
   }
 }
 
 /* ============ Renderers ============ */
 const board = document.getElementById('board');
+if (!board) {
+  console.error('Board element not found');
+  alert('Error: Board element not found. Please check the HTML structure.');
+}
 
 function renderParent(model) {
   try {
@@ -221,6 +231,7 @@ function renderParent(model) {
     head.className = 'parent-head';
 
     const pill = makeEditablePill(model.title, model.id);
+    if (!pill) throw new Error('Failed to create parent pill');
     pill.addEventListener('input', () => { model.title = pill.textContent.trim() || 'parent topic'; saveAll(); });
     pill.addEventListener('blur', () => { pill.textContent = model.title; drawLines(); });
     head.appendChild(pill);
@@ -239,6 +250,7 @@ function renderParent(model) {
         saveAll();
       } catch (e) {
         console.error('Failed to add sub-topic:', e);
+        alert('Error adding sub-topic. Please check the console.');
       }
     });
     head.appendChild(addSub);
@@ -257,6 +269,7 @@ function renderParent(model) {
         }
       } catch (e) {
         console.error('Failed to delete parent:', e);
+        alert('Error deleting parent. Please check the console.');
       }
     });
     head.appendChild(deleteParent);
@@ -279,6 +292,7 @@ function renderParent(model) {
             if (newId === sub.id) chip.classList.add('new-item');
 
             const sp = makeEditablePill(sub.title, sub.id, true);
+            if (!sp) throw new Error('Failed to create sub-topic pill');
             sp.addEventListener('input', () => { sub.title = sp.textContent.trim() || 'sub-topic'; saveAll(); });
             sp.addEventListener('blur', () => { sp.textContent = sub.title; drawLines(); });
             chip.appendChild(sp);
@@ -296,6 +310,7 @@ function renderParent(model) {
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic left:', e);
+                alert('Error adding sub-topic. Please check the console.');
               }
             });
 
@@ -309,6 +324,7 @@ function renderParent(model) {
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic above:', e);
+                alert('Error adding sub-topic. Please check the console.');
               }
             });
 
@@ -322,6 +338,7 @@ function renderParent(model) {
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic right:', e);
+                alert('Error adding sub-topic. Please check the console.');
               }
             });
 
@@ -335,6 +352,7 @@ function renderParent(model) {
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic below:', e);
+                alert('Error adding sub-topic. Please check the console.');
               }
             });
 
@@ -349,6 +367,7 @@ function renderParent(model) {
                 }
               } catch (e) {
                 console.error('Failed to delete sub-topic:', e);
+                alert('Error deleting sub-topic. Please check the console.');
               }
             });
 
@@ -365,6 +384,7 @@ function renderParent(model) {
         }
       } catch (e) {
         console.error('Failed to render subs:', e);
+        alert('Error rendering sub-topics. Please check the console.');
       }
     }
 
@@ -393,6 +413,7 @@ function renderParent(model) {
         });
       } catch (e) {
         console.error('Failed to draw lines:', e);
+        alert('Error drawing hierarchy lines. Please check the console.');
       }
     }
 
@@ -407,13 +428,15 @@ function renderParent(model) {
     return wrap;
   } catch (e) {
     console.error('Failed to render parent:', e);
+    alert('Error rendering parent topic. Please check the console.');
     return null;
   }
 }
 
 function addParent(focus = true) {
   try {
-    console.log('Adding new parent topic');
+    console.log('Attempting to add parent topic');
+    if (!board) throw new Error('Board element is missing');
     const model = newParentModel();
     parents.push(model);
     const node = renderParent(model);
@@ -422,12 +445,17 @@ function addParent(focus = true) {
     saveAll();
     if (focus) {
       const pill = node.querySelector('.btn');
-      if (pill) pill.focus();
+      if (pill) {
+        pill.focus();
+        console.log('Focused new parent pill:', model.id);
+      } else {
+        console.warn('No pill found to focus');
+      }
     }
     console.log('Parent added successfully:', model.id);
   } catch (e) {
     console.error('Failed to add parent:', e);
-    alert('Error adding parent topic. Please check the console for details.');
+    alert('Error adding parent topic. Please check the console (F12) for details.');
   }
 }
 
@@ -441,6 +469,7 @@ function exportJSON() {
     const json = JSON.stringify({map: data, exported: new Date().toISOString()}, null, 2);
     navigator.clipboard.writeText(json).then(() => {
       alert('JSON copied to clipboard!');
+      console.log('JSON exported successfully');
     }).catch(err => {
       console.error('Failed to copy JSON:', err);
       alert('Failed to copy JSON. Please check the console.');
@@ -459,7 +488,7 @@ function clearMap() {
       parents = [];
       localStorage.removeItem('topicMap');
       parentId = 0;
-      addParent();
+      addParent(false);
       console.log('Map cleared successfully');
     }
   } catch (e) {
@@ -474,6 +503,7 @@ function loadFromStorage() {
     const saved = localStorage.getItem('topicMap');
     if (saved) {
       const loadedParents = JSON.parse(saved);
+      if (!Array.isArray(loadedParents)) throw new Error('Invalid localStorage data');
       loadedParents.forEach(model => {
         parentId = Math.max(parentId, parseInt(model.id.slice(1)) || 0);
         parents.push(model);
@@ -485,23 +515,26 @@ function loadFromStorage() {
     if (parents.length === 0) addParent(false);
   } catch (e) {
     console.error('Failed to load map:', e);
-    alert('Error loading saved map. Starting fresh.');
+    alert('Error loading saved map. Starting fresh. Please check the console.');
     addParent(false);
   }
 }
 
 /* ============ Wire up ============ */
 try {
-  document.getElementById('addParent').addEventListener('click', () => {
+  const addParentBtn = document.getElementById('addParent');
+  if (!addParentBtn) throw new Error('Add parent button not found');
+  addParentBtn.addEventListener('click', () => {
     console.log('Add parent button clicked');
     addParent();
   });
   document.getElementById('exportBtn').addEventListener('click', exportJSON);
   document.getElementById('clearBtn').addEventListener('click', clearMap);
   loadFromStorage();
+  console.log('Application initialized successfully');
 } catch (e) {
   console.error('Failed to initialize event listeners:', e);
-  alert('Error initializing the app. Please check the console.');
+  alert('Error initializing the app. Please check the console (F12) for details.');
 }
 </script>
 </body>
