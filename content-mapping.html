@@ -33,8 +33,8 @@
 
   /* Header */
   .bar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px}
-  .ghost{appearance:none;border:1px solid var(--ring);background:transparent;color:var(--ink);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer;transition:background 0.2s}
-  .primary{appearance:none;border:1px solid var(--ring);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 24px rgba(110,86,207,.35);transition:filter 0.2s}
+  .ghost{appearance:none;border:1px solid var(--ring);background:transparent;color:var(--ink);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer}
+  .primary{appearance:none;border:1px solid var(--ring);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 24px rgba(110,86,207,.35)}
   .ghost:hover,.primary:hover{filter:brightness(1.05)}
 
   /* Parent topic row */
@@ -42,7 +42,6 @@
     background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
     border:1px solid rgba(255,255,255,.12);
     border-radius:14px; padding:14px; margin:12px 0;
-    transition:transform 0.2s, opacity 0.2s;
   }
   .parent-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
   .btn{
@@ -50,7 +49,7 @@
     border-radius:12px; border:1px solid rgba(255,255,255,.15);
     color:#fff; font-weight:800; text-decoration:none; cursor:text;
     box-shadow:0 12px 24px rgba(0,0,0,.25);
-    outline:none; transition:box-shadow 0.2s;
+    outline:none;
   }
   .btn.small{
     min-height:38px; padding:8px 10px; font-weight:700;
@@ -65,50 +64,37 @@
     display:inline-flex; align-items:center; justify-content:center;
     width:40px; height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.15);
     background:#1a1f3a; color:#fff; cursor:pointer; font-weight:900;
-    transition:filter 0.2s;
   }
   .act:hover{filter:brightness(1.05)}
   .act-row{display:flex; gap:8px; align-items:center}
 
   /* Subtopic grid under each parent */
   .subs{ margin-top:12px; display:grid; grid-auto-rows:auto; gap:8px }
-  .subs-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:start }
+  .subs-row{ display:grid; grid-auto-flow:column; gap:8px; align-items:start }
   .chip{
     display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
     background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
     border:1px solid rgba(255,255,255,.12); padding:6px; border-radius:12px;
-    transition:transform 0.2s, opacity 0.2s;
   }
-  .chip .btn{ flex:1; min-width:0; max-width:200px; } /* Removed min-width, added max for wrapping */
+  .chip .btn{ flex:1; min-width:120px }
   .chip .mini{
     display:inline-flex; align-items:center; justify-content:center;
     width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
     background:#171b33; color:#fff; cursor:pointer; font-weight:900;
-    transition:filter 0.2s;
   }
   .mini:hover{filter:brightness(1.07)}
-  .mini.delete { background: #ff4d4d; border-color: rgba(255,0,0,0.3); } /* Style for delete */
-  .mini.delete:hover { filter:brightness(1.1); }
 
   .tiny{color:var(--muted); font-size:12px; margin-top:6px}
-
-  /* Animations */
-  .fade-in { animation: fadeIn 0.3s ease-in; }
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="bar">
     <button id="addParent" class="primary">+ Add parent topic</button>
-    <button id="exportBtn" class="ghost" title="Download a JSON snapshot of your map">📥 Export JSON</button>
-    <button id="copyBtn" class="ghost" title="Copy JSON to clipboard">📋 Copy JSON</button>
+    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map">📋 Export</button>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: Click any pill to edit. Parent “+” adds a sub-topic. Sub-topic arrows add ← left, → right, or ⬇ bottom (new row). Use 'x' to delete.</div>
+  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic below. Sub-topic arrows add to the ← left, → right, or ⬇ bottom (new row).</div>
 </div>
 
 <script>
@@ -128,15 +114,13 @@ function makeEditablePill(text, key, small=false){
   el.contentEditable = 'true';
   el.spellcheck = false;
   el.textContent = text;
-  el.style.background = colorFor(key, small?8:0); /* Lighten subs a bit for contrast */
+  el.style.background = colorFor(key, small?0:0);
   el.addEventListener('focus', () => {
-    if((text === 'Parent Topic' || text === 'Sub-topic') && el.textContent.trim() === text){
-      el.textContent = '';
-    }
-  });
-  el.addEventListener('blur', () => {
-    if (el.textContent.trim() === '') {
-      el.textContent = small ? 'Sub-topic' : 'Parent Topic';
+    if((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text){
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
     }
   });
   el.addEventListener('keydown', (e)=>{
@@ -148,10 +132,10 @@ function makeEditablePill(text, key, small=false){
 /* ============ Model ============ */
 let parentId = 0;
 function newParentModel(){
-  return { id: `p${++parentId}`, title: 'Parent Topic', rows: [] };
+  return { id: `p${++parentId}`, title: 'parent topic', rows: [] };
 }
 function newSubModel(){
-  return { id: `s${Math.random().toString(36).slice(2,8)}`, title: 'Sub-topic' };
+  return { id: `s${Math.random().toString(36).slice(2,8)}`, title: 'sub-topic' };
 }
 
 /* ============ Renderers ============ */
@@ -159,14 +143,14 @@ const board = document.getElementById('board');
 
 function renderParent(model){
   const wrap = document.createElement('section');
-  wrap.className = 'parent fade-in';
+  wrap.className = 'parent';
   wrap.dataset.pid = model.id;
 
   const head = document.createElement('div');
   head.className = 'parent-head';
 
   const pill = makeEditablePill(model.title, model.id);
-  pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'Parent Topic');
+  pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'parent topic');
   head.appendChild(pill);
 
   const addSub = document.createElement('button');
@@ -181,21 +165,6 @@ function renderParent(model){
   });
   head.appendChild(addSub);
 
-  const deleteParent = document.createElement('button');
-  deleteParent.className = 'act';
-  deleteParent.title = 'Delete this parent topic';
-  deleteParent.textContent = '✕';
-  deleteParent.style.background = '#ff4d4d';
-  deleteParent.style.borderColor = 'rgba(255,0,0,0.3)';
-  deleteParent.addEventListener('click', ()=>{
-    if (confirm('Delete this parent topic and all subtopics?')) {
-      wrap.style.opacity = 0;
-      wrap.style.transform = 'translateY(20px)';
-      setTimeout(() => wrap.remove(), 200);
-    }
-  });
-  head.appendChild(deleteParent);
-
   const subs = document.createElement('div');
   subs.className = 'subs';
 
@@ -206,10 +175,10 @@ function renderParent(model){
       rowEl.className = 'subs-row';
       row.forEach((sub, cIndex)=>{
         const chip = document.createElement('div');
-        chip.className = 'chip fade-in';
+        chip.className = 'chip';
 
         const sp = makeEditablePill(sub.title, sub.id, true);
-        sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'Sub-topic');
+        sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'sub-topic');
         chip.appendChild(sp);
 
         const left = document.createElement('button');
@@ -234,22 +203,10 @@ function renderParent(model){
           renderSubs();
         });
 
-        const delSub = document.createElement('button');
-        delSub.className = 'mini delete'; delSub.title = 'Delete this sub-topic'; delSub.textContent = '✕';
-        delSub.addEventListener('click', ()=>{
-          if (confirm('Delete this sub-topic?')) {
-            row.splice(cIndex, 1);
-            if (row.length === 0) {
-              model.rows.splice(rIndex, 1);
-            }
-            renderSubs();
-          }
-        });
-
-        chip.append(left, right, down, delSub);
+        chip.append(left, right, down);
         rowEl.appendChild(chip);
       });
-      if (row.length > 0) subs.appendChild(rowEl);
+      subs.appendChild(rowEl);
     });
   }
 
@@ -268,7 +225,7 @@ function addParent(){
 }
 
 /* ============ Export ============ */
-function getData() {
+function exportJSON(){
   const data = [];
   board.querySelectorAll('.parent').forEach(parent=>{
     const title = parent.querySelector('.btn').textContent.trim();
@@ -279,11 +236,6 @@ function getData() {
     });
     data.push({ title, rows });
   });
-  return data;
-}
-
-function exportJSON(){
-  const data = getData();
   const blob = new Blob([JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -293,20 +245,9 @@ function exportJSON(){
   a.remove();
 }
 
-function copyJSON() {
-  const data = getData();
-  const json = JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2);
-  navigator.clipboard.writeText(json).then(() => {
-    alert('JSON copied to clipboard!');
-  }).catch(err => {
-    console.error('Failed to copy: ', err);
-  });
-}
-
 /* ============ Wire up ============ */
 document.getElementById('addParent').addEventListener('click', addParent);
 document.getElementById('exportBtn').addEventListener('click', exportJSON);
-document.getElementById('copyBtn').addEventListener('click', copyJSON);
 addParent(); // start with one parent
 </script>
 </body>
