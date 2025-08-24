@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Content Mapping</title>
+<meta name="color-scheme" content="light dark" />
+<style>
+  :root{
+    --bg:#0f1220; --panel:#121527; --ink:#eef1ff; --muted:#9aa3bf;
+    --accent:#6E56CF; --accent2:#45E7B3; --ring:rgba(255,255,255,.25);
+    --radius:14px; --shadow:0 18px 44px rgba(0,0,0,.35);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1528; --muted:#5b668a; --ring:rgba(0,0,0,.18) }
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:var(--font); color:var(--ink);
+    background:
+      radial-gradient(900px 420px at 0% -10%, rgba(110,86,207,.25), transparent 55%),
+      radial-gradient(800px 360px at 110% 0%, rgba(69,231,179,.20), transparent 55%),
+      var(--bg);
+    display:flex; align-items:stretch; justify-content:center;
+  }
+  .wrap{
+    width:100%; max-width:1100px; padding:18px; margin:10px;
+    background:var(--panel); border:1px solid rgba(255,255,255,.08);
+    border-radius:18px; box-shadow:var(--shadow);
+  }
+
+  /* Header */
+  .bar{display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .ghost{appearance:none;border:1px solid var(--ring);background:transparent;color:var(--ink);padding:8px 12px;border-radius:12px;font-weight:600;cursor:pointer}
+  .primary{appearance:none;border:1px solid var(--ring);background:var(--accent);color:#fff;padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer;box-shadow:0 12px 24px rgba(110,86,207,.35)}
+  .ghost:hover,.primary:hover{filter:brightness(1.05)}
+
+  /* Parent topic row */
+  .parent{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:14px; padding:14px; margin:12px 0;
+  }
+  .parent-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; padding:10px 12px; min-height:44px;
+    border-radius:12px; border:1px solid rgba(255,255,255,.15);
+    color:#fff; font-weight:800; text-decoration:none; cursor:text;
+    box-shadow:0 12px 24px rgba(0,0,0,.25);
+    outline:none;
+  }
+  .btn.small{
+    min-height:38px; padding:8px 10px; font-weight:700;
+  }
+  .btn[contenteditable="true"]{
+    caret-color:currentColor;
+  }
+  .btn:focus{
+    box-shadow:0 0 0 3px var(--ring), 0 12px 24px rgba(0,0,0,.25);
+  }
+  .act{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:40px; height:40px; border-radius:12px; border:1px solid rgba(255,255,255,.15);
+    background:#1a1f3a; color:#fff; cursor:pointer; font-weight:900;
+  }
+  .act:hover{filter:brightness(1.05)}
+  .act-row{display:flex; gap:8px; align-items:center}
+
+  /* Subtopic grid under each parent */
+  .subs{ margin-top:12px; display:grid; grid-auto-rows:auto; gap:8px }
+  .subs-row{ display:grid; grid-auto-flow:column; gap:8px; align-items:start }
+  .chip{
+    display:flex; align-items:center; gap:8px; flex-wrap:nowrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.03), transparent);
+    border:1px solid rgba(255,255,255,.12); padding:6px; border-radius:12px;
+  }
+  .chip .btn{ flex:1; min-width:120px }
+  .chip .mini{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:36px; height:36px; border-radius:10px; border:1px solid rgba(255,255,255,.15);
+    background:#171b33; color:#fff; cursor:pointer; font-weight:900;
+  }
+  .mini:hover{filter:brightness(1.07)}
+
+  .tiny{color:var(--muted); font-size:12px; margin-top:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <button id="addParent" class="primary">+ Add parent topic</button>
+    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map">📋 Export</button>
+  </div>
+  <div id="board"></div>
+  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic below. Sub-topic arrows add to the ← left, → right, or ⬇ bottom (new row).</div>
+</div>
+
+<script>
+/* ============ Color utilities (deterministic per element) ============ */
+function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function hueFrom(s){ return hash(s) % 360; }
+function colorFor(key, lighten=0){
+  const h = hueFrom(key);
+  const l1 = 48 + lighten, l2 = 42 + lighten;
+  return `linear-gradient(180deg, hsl(${h} 75% ${l1}%), hsl(${(h+22)%360} 82% ${l2}%))`;
+}
+
+/* ============ DOM helpers ============ */
+function makeEditablePill(text, key, small=false){
+  const el = document.createElement('div');
+  el.className = 'btn' + (small ? ' small' : '');
+  el.contentEditable = 'true';
+  el.spellcheck = false;
+  el.textContent = text;
+  el.style.background = colorFor(key, small?0:0);
+  el.addEventListener('focus', () => {
+    if((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text){
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const sel = window.getSelection();
+      sel.removeAllRanges(); sel.addRange(range);
+    }
+  });
+  el.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+  });
+  return el;
+}
+
+/* ============ Model ============ */
+let parentId = 0;
+function newParentModel(){
+  return { id: `p${++parentId}`, title: 'parent topic', rows: [] };
+}
+function newSubModel(){
+  return { id: `s${Math.random().toString(36).slice(2,8)}`, title: 'sub-topic' };
+}
+
+/* ============ Renderers ============ */
+const board = document.getElementById('board');
+
+function renderParent(model){
+  const wrap = document.createElement('section');
+  wrap.className = 'parent';
+  wrap.dataset.pid = model.id;
+
+  const head = document.createElement('div');
+  head.className = 'parent-head';
+
+  const pill = makeEditablePill(model.title, model.id);
+  pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'parent topic');
+  head.appendChild(pill);
+
+  const addSub = document.createElement('button');
+  addSub.className = 'act';
+  addSub.title = 'Add sub-topic below';
+  addSub.textContent = '+';
+  addSub.addEventListener('click', ()=>{
+    if(model.rows.length === 0) model.rows.push([]);
+    const rowIndex = model.rows.length - 1;
+    model.rows[rowIndex].push(newSubModel());
+    renderSubs();
+  });
+  head.appendChild(addSub);
+
+  const subs = document.createElement('div');
+  subs.className = 'subs';
+
+  function renderSubs(){
+    subs.innerHTML = '';
+    model.rows.forEach((row, rIndex)=>{
+      const rowEl = document.createElement('div');
+      rowEl.className = 'subs-row';
+      row.forEach((sub, cIndex)=>{
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+
+        const sp = makeEditablePill(sub.title, sub.id, true);
+        sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'sub-topic');
+        chip.appendChild(sp);
+
+        const left = document.createElement('button');
+        left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
+        left.addEventListener('click', ()=>{
+          row.splice(cIndex, 0, newSubModel());
+          renderSubs();
+        });
+
+        const right = document.createElement('button');
+        right.className = 'mini'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
+        right.addEventListener('click', ()=>{
+          row.splice(cIndex+1, 0, newSubModel());
+          renderSubs();
+        });
+
+        const down = document.createElement('button');
+        down.className = 'mini'; down.title = 'Add sub-topic on a new row below'; down.textContent = '⬇';
+        down.addEventListener('click', ()=>{
+          const newRow = [newSubModel()];
+          model.rows.splice(rIndex+1, 0, newRow);
+          renderSubs();
+        });
+
+        chip.append(left, right, down);
+        rowEl.appendChild(chip);
+      });
+      subs.appendChild(rowEl);
+    });
+  }
+
+  renderSubs();
+  wrap.append(head, subs);
+  return wrap;
+}
+
+function addParent(){
+  const model = newParentModel();
+  model.rows = [[]];
+  const node = renderParent(model);
+  board.appendChild(node);
+  const pill = node.querySelector('.btn');
+  pill.focus();
+}
+
+/* ============ Export ============ */
+function exportJSON(){
+  const data = [];
+  board.querySelectorAll('.parent').forEach(parent=>{
+    const title = parent.querySelector('.btn').textContent.trim();
+    const rows = [];
+    parent.querySelectorAll('.subs-row').forEach(row=>{
+      const items = Array.from(row.querySelectorAll('.btn.small')).map(b=> b.textContent.trim());
+      if(items.length) rows.push(items);
+    });
+    data.push({ title, rows });
+  });
+  const blob = new Blob([JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'content-map.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(()=> URL.revokeObjectURL(a.href), 800);
+  a.remove();
+}
+
+/* ============ Wire up ============ */
+document.getElementById('addParent').addEventListener('click', addParent);
+document.getElementById('exportBtn').addEventListener('click', exportJSON);
+addParent(); // start with one parent
+</script>
+</body>
+</html>
