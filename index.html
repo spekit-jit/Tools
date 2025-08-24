@@ -6,10 +6,7 @@
 <meta name="color-scheme" content="light dark" />
 <title>tools</title>
 <style>
-  :root{
-    --bg:#0f1220; --panel:#14182a; --radius:16px; --shadow:0 16px 40px rgba(0,0,0,.38);
-    --ink:#e9ecf8;
-  }
+  :root{ --bg:#0f1220; --panel:#14182a; --ink:#e9ecf8; --radius:16px; --shadow:0 16px 40px rgba(0,0,0,.38) }
   @media (prefers-color-scheme: light){
     :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1426; --shadow:0 18px 40px rgba(12,24,60,.08) }
   }
@@ -44,26 +41,34 @@
   @media (max-width:980px){ a.tool{grid-column:span 4} }
   @media (max-width:640px){ a.tool{grid-column:span 2} }
   a.tool:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.30) }
+
+  /* Optional: tiny debug badge shown only with #debug */
+  #dbg{position:fixed;bottom:8px;right:10px;background:rgba(0,0,0,.45);color:#fff;
+       padding:6px 8px;border-radius:8px;font:12px/1.2 ui-monospace,monospace;display:none}
 </style>
 </head>
 <body>
   <div class="board">
     <div id="grid" class="grid"></div>
   </div>
+  <div id="dbg"></div>
 
 <script>
-/* ---------- minimal, auto-updating tools index ---------- */
+/* ---------- ultra-minimal, auto-updating tools index ---------- */
 const grid = document.getElementById("grid");
+const dbg  = document.getElementById("dbg");
+const showDebug = location.hash.includes("debug");
 
-/* User site repo detection: https://spekit-jit.github.io/tools */
+/* User site repo (https://spekit-jit.github.io/tools) */
 function getOwnerRepo(){
-  const owner = location.hostname.split(".")[0];        // "spekit-jit"
-  const repo  = `${owner}.github.io`;                   // user-site repo name
+  const owner = location.hostname.split(".")[0];  // "spekit-jit"
+  const repo  = `${owner}.github.io`;            // user-site repo name
   return { owner, repo };
 }
-function toHref(rel){ // rel is filename within /tools
-  const base = location.pathname.endsWith('/') ? location.pathname : location.pathname.replace(/\/[^/]*$/, '/');
-  return new URL(rel, location.origin + base).toString();
+
+/* IMPORTANT FIX: always link to /tools/<file>, regardless of trailing slash */
+function toHref(rel){
+  return `${location.origin}/tools/${rel.replace(/^\/+/,'')}`;
 }
 
 /* Pretty button styles */
@@ -89,43 +94,53 @@ function makeButton(filename){
   return a;
 }
 
-function render(files){
+function render(files, sourceLabel){
   grid.innerHTML = '';
   const htmlFiles = files
     .filter(n => /\.html?$/i.test(n))
     .filter(n => !/^index\.html?$/i.test(n))
     .sort((a,b)=>a.localeCompare(b));
+
   htmlFiles.forEach(n => grid.appendChild(makeButton(n)));
+  if (showDebug) { dbg.style.display='block'; dbg.textContent = `${htmlFiles.length} file(s) • ${sourceLabel}`; }
 }
 
-/* Data source: GitHub Contents API (public repo) */
-async function listTools(){
+/* Data sources */
+async function listViaAPI(){
   const {owner, repo} = getOwnerRepo();
-  // Add a cache-buster param so intermediate proxies don’t stale-cache
   const api = `https://api.github.com/repos/${owner}/${repo}/contents/tools?cb=${Date.now()}`;
   const res = await fetch(api, {cache:'no-store'});
   if(!res.ok) throw new Error(res.status + ' ' + res.statusText);
   const data = await res.json();
   return data.filter(x => x.type === 'file').map(x => x.name);
 }
+async function listViaManifest(){
+  try{
+    const res = await fetch('./tools.json', {cache:'no-store'});
+    if(!res.ok) return null;
+    const arr = await res.json();
+    return arr.map(x => typeof x==='string' ? x : x.path).filter(Boolean);
+  }catch{ return null; }
+}
 
-/* Auto-update: on load, on tab focus, and every 60s */
-let polling = null;
+/* Boot + polling */
 async function refresh(){
   try{
-    const files = await listTools();
-    render(files);
+    const mf = await listViaManifest();
+    if (mf && mf.length) return render(mf, 'manifest');
+  }catch{}
+  try{
+    const files = await listViaAPI();
+    return render(files, 'GitHub API');
   }catch(e){
-    // Silent: if API hiccups, keep current view; next refresh will fix it
+    if (showDebug) { dbg.style.display='block'; dbg.textContent = 'error: '+ e.message; }
   }
 }
-function startPolling(){
-  if(polling) return;
-  polling = setInterval(refresh, 60000); // 60s
-}
+
+let poll=null;
+function startPolling(){ if(!poll){ poll = setInterval(refresh, 60000); } }
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refresh(); });
 
-/* Boot */
 refresh();
 startPolling();
 </script>
