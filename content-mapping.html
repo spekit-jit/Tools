@@ -14,6 +14,9 @@
   }
   @media (prefers-color-scheme: light){
     :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1528; --muted:#5b668a; --ring:rgba(0,0,0,.18) }
+    .parent{ background:linear-gradient(180deg, rgba(0,0,0,.03), transparent), #f0f2f5; }
+    .act{ background:#e0e4f0; }
+    .chip .mini{ background:#d8dcf0; }
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -39,6 +42,7 @@
 
   /* Parent topic row */
   .parent{
+    position: relative;
     background:linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
     border:1px solid rgba(255,255,255,.12);
     border-radius:14px; padding:14px; margin:12px 0;
@@ -94,7 +98,7 @@
     <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map to clipboard">📋 Copy JSON</button>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic to the last row. Sub-topic arrows add to the ← left, ↑ above (new row), → right, or ⬇ below (new row). Use × to delete.</div>
+  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic to the last row. Sub-topic arrows add to the ← left, ↑ above (new row), → right, or ⬇ below (new row). Use × to delete. Lines connect parent to subs for hierarchy.</div>
 </div>
 
 <script>
@@ -146,6 +150,32 @@ function renderParent(model){
   wrap.className = 'parent';
   wrap.dataset.pid = model.id;
 
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.style.position = 'absolute';
+  svg.style.top = '0';
+  svg.style.left = '0';
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+  svg.style.pointerEvents = 'none';
+
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+  grad.id = 'lineGrad';
+  grad.setAttribute('x1', '0%');
+  grad.setAttribute('y1', '0%');
+  grad.setAttribute('x2', '0%');
+  grad.setAttribute('y2', '100%');
+  const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+  stop1.setAttribute('offset', '0%');
+  stop1.setAttribute('stop-color', 'var(--accent)');
+  const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+  stop2.setAttribute('offset', '100%');
+  stop2.setAttribute('stop-color', 'var(--accent2)');
+  grad.appendChild(stop1);
+  grad.appendChild(stop2);
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+
   const head = document.createElement('div');
   head.className = 'parent-head';
 
@@ -156,129 +186,4 @@ function renderParent(model){
 
   const addSub = document.createElement('button');
   addSub.className = 'act';
-  addSub.title = 'Add sub-topic to the last row';
-  addSub.textContent = '+';
-  addSub.addEventListener('click', ()=>{
-    if(model.rows.length === 0) model.rows.push([]);
-    const rowIndex = model.rows.length - 1;
-    model.rows[rowIndex].push(newSubModel());
-    renderSubs();
-  });
-  head.appendChild(addSub);
-
-  const deleteParent = document.createElement('button');
-  deleteParent.className = 'act';
-  deleteParent.title = 'Delete this parent topic';
-  deleteParent.textContent = '×';
-  deleteParent.addEventListener('click', ()=>{
-    if(confirm('Delete this parent topic and all its sub-topics?')) {
-      board.removeChild(wrap);
-    }
-  });
-  head.appendChild(deleteParent);
-
-  const subs = document.createElement('div');
-  subs.className = 'subs';
-
-  function renderSubs(){
-    subs.innerHTML = '';
-    model.rows = model.rows.filter(row => row.length > 0); // Clean up empty rows
-    model.rows.forEach((row, rIndex)=>{
-      const rowEl = document.createElement('div');
-      rowEl.className = 'subs-row';
-      row.forEach((sub, cIndex)=>{
-        const chip = document.createElement('div');
-        chip.className = 'chip';
-
-        const sp = makeEditablePill(sub.title, sub.id, true);
-        sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'sub-topic');
-        sp.addEventListener('blur', ()=> sp.textContent = sub.title);
-        chip.appendChild(sp);
-
-        const left = document.createElement('button');
-        left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
-        left.addEventListener('click', ()=>{
-          row.splice(cIndex, 0, newSubModel());
-          renderSubs();
-        });
-
-        const up = document.createElement('button');
-        up.className = 'mini'; up.title = 'Add sub-topic on a new row above'; up.textContent = '↑';
-        up.addEventListener('click', ()=>{
-          const newRow = [newSubModel()];
-          model.rows.splice(rIndex, 0, newRow);
-          renderSubs();
-        });
-
-        const right = document.createElement('button');
-        right.className = 'mini'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
-        right.addEventListener('click', ()=>{
-          row.splice(cIndex+1, 0, newSubModel());
-          renderSubs();
-        });
-
-        const down = document.createElement('button');
-        down.className = 'mini'; down.title = 'Add sub-topic on a new row below'; down.textContent = '⬇';
-        down.addEventListener('click', ()=>{
-          const newRow = [newSubModel()];
-          model.rows.splice(rIndex+1, 0, newRow);
-          renderSubs();
-        });
-
-        const del = document.createElement('button');
-        del.className = 'mini'; del.title = 'Delete this sub-topic'; del.textContent = '×';
-        del.addEventListener('click', ()=>{
-          if(confirm('Delete this sub-topic?')) {
-            row.splice(cIndex, 1);
-            renderSubs();
-          }
-        });
-
-        chip.append(left, up, right, down, del);
-        rowEl.appendChild(chip);
-      });
-      subs.appendChild(rowEl);
-    });
-  }
-
-  renderSubs();
-  wrap.append(head, subs);
-  return wrap;
-}
-
-function addParent(){
-  const model = newParentModel();
-  model.rows = [[]];
-  const node = renderParent(model);
-  board.appendChild(node);
-  const pill = node.querySelector('.btn');
-  pill.focus();
-}
-
-/* ============ Export ============ */
-function exportJSON(){
-  const data = [];
-  board.querySelectorAll('.parent').forEach(parent=>{
-    const title = parent.querySelector('.btn').textContent.trim();
-    const rows = [];
-    parent.querySelectorAll('.subs-row').forEach(row=>{
-      const items = Array.from(row.querySelectorAll('.btn.small')).map(b=> b.textContent.trim());
-      if(items.length) rows.push(items);
-    });
-    data.push({ title, rows });
-  });
-  const json = JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2);
-  navigator.clipboard.writeText(json).then(() => {
-    alert('JSON copied to clipboard!');
-  }).catch(err => {
-    console.error('Failed to copy: ', err);
-  });
-}
-
-/* ============ Wire up ============ */
-document.getElementById('addParent').addEventListener('click', addParent);
-document.getElementById('exportBtn').addEventListener('click', exportJSON);
-addParent(); // start with one parent
-</script>
-</body>
-</html>
+  addSub.title = 'Add sub-topic
