@@ -91,10 +91,10 @@
 <div class="wrap">
   <div class="bar">
     <button id="addParent" class="primary">+ Add parent topic</button>
-    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map">📋 Export</button>
+    <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map to clipboard">📋 Copy JSON</button>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic below. Sub-topic arrows add to the ← left, → right, or ⬇ bottom (new row).</div>
+  <div class="tiny">Tip: click any pill to type. Parent “+” adds a sub-topic to the last row. Sub-topic arrows add to the ← left, ↑ above (new row), → right, or ⬇ below (new row). Use × to delete.</div>
 </div>
 
 <script>
@@ -151,11 +151,12 @@ function renderParent(model){
 
   const pill = makeEditablePill(model.title, model.id);
   pill.addEventListener('input', ()=> model.title = pill.textContent.trim() || 'parent topic');
+  pill.addEventListener('blur', ()=> pill.textContent = model.title);
   head.appendChild(pill);
 
   const addSub = document.createElement('button');
   addSub.className = 'act';
-  addSub.title = 'Add sub-topic below';
+  addSub.title = 'Add sub-topic to the last row';
   addSub.textContent = '+';
   addSub.addEventListener('click', ()=>{
     if(model.rows.length === 0) model.rows.push([]);
@@ -165,11 +166,23 @@ function renderParent(model){
   });
   head.appendChild(addSub);
 
+  const deleteParent = document.createElement('button');
+  deleteParent.className = 'act';
+  deleteParent.title = 'Delete this parent topic';
+  deleteParent.textContent = '×';
+  deleteParent.addEventListener('click', ()=>{
+    if(confirm('Delete this parent topic and all its sub-topics?')) {
+      board.removeChild(wrap);
+    }
+  });
+  head.appendChild(deleteParent);
+
   const subs = document.createElement('div');
   subs.className = 'subs';
 
   function renderSubs(){
     subs.innerHTML = '';
+    model.rows = model.rows.filter(row => row.length > 0); // Clean up empty rows
     model.rows.forEach((row, rIndex)=>{
       const rowEl = document.createElement('div');
       rowEl.className = 'subs-row';
@@ -179,12 +192,21 @@ function renderParent(model){
 
         const sp = makeEditablePill(sub.title, sub.id, true);
         sp.addEventListener('input', ()=> sub.title = sp.textContent.trim() || 'sub-topic');
+        sp.addEventListener('blur', ()=> sp.textContent = sub.title);
         chip.appendChild(sp);
 
         const left = document.createElement('button');
         left.className = 'mini'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
         left.addEventListener('click', ()=>{
           row.splice(cIndex, 0, newSubModel());
+          renderSubs();
+        });
+
+        const up = document.createElement('button');
+        up.className = 'mini'; up.title = 'Add sub-topic on a new row above'; up.textContent = '↑';
+        up.addEventListener('click', ()=>{
+          const newRow = [newSubModel()];
+          model.rows.splice(rIndex, 0, newRow);
           renderSubs();
         });
 
@@ -203,7 +225,16 @@ function renderParent(model){
           renderSubs();
         });
 
-        chip.append(left, right, down);
+        const del = document.createElement('button');
+        del.className = 'mini'; del.title = 'Delete this sub-topic'; del.textContent = '×';
+        del.addEventListener('click', ()=>{
+          if(confirm('Delete this sub-topic?')) {
+            row.splice(cIndex, 1);
+            renderSubs();
+          }
+        });
+
+        chip.append(left, up, right, down, del);
         rowEl.appendChild(chip);
       });
       subs.appendChild(rowEl);
@@ -236,13 +267,12 @@ function exportJSON(){
     });
     data.push({ title, rows });
   });
-  const blob = new Blob([JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'content-map.json';
-  document.body.appendChild(a); a.click();
-  setTimeout(()=> URL.revokeObjectURL(a.href), 800);
-  a.remove();
+  const json = JSON.stringify({map:data, exported:new Date().toISOString()}, null, 2);
+  navigator.clipboard.writeText(json).then(() => {
+    alert('JSON copied to clipboard!');
+  }).catch(err => {
+    console.error('Failed to copy: ', err);
+  });
 }
 
 /* ============ Wire up ============ */
