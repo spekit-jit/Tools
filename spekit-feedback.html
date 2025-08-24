@@ -5,20 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Integrates with your auto-label workflow -->
-  <meta name="app-label" content="Spekit Feedback" />
+  <meta name="app-label" content="Spekit Feedback V2" />
   <meta name="app-emoji" content="🗳️" />
   <meta name="app-color" content="#6C5CE7" />
 
-  <title>Spekit Feedback</title>
+  <title>Spekit Feedback V2</title>
   <meta name="color-scheme" content="light dark" />
 
   <style>
     :root{
       --ink:#0f1426; --bg:#f6f7fb; --panel:#ffffff; --brand:#6C5CE7; --muted:#9aa3bf;
-      --ok:#12c48b; --warn:#ffb020; --err:#ff6b6b; --shadow:0 14px 36px rgba(12,24,60,.10)
+      --ok:#12c48b; --warn:#ffb020; --err:#ff6b6b; --shadow:0 14px 36px rgba(12,24,60,.10);
+      --border: #e3e6f2;
     }
     @media (prefers-color-scheme: dark){
-      :root{ --ink:#e9ecf8; --bg:#0f1220; --panel:#14182a; --shadow:0 18px 50px rgba(0,0,0,.45) }
+      :root{ --ink:#e9ecf8; --bg:#0f1220; --panel:#14182a; --border: #27304a; --shadow:0 18px 50px rgba(0,0,0,.45) }
     }
     *{box-sizing:border-box} html,body{height:100%}
     body{
@@ -28,47 +29,64 @@
         radial-gradient(800px 360px at 110% 0%, rgba(18,196,139,.18), transparent 55%), var(--bg);
       display:flex; justify-content:center;
     }
-    .wrap{width:100%; max-width:980px; margin:18px; padding:18px; background:var(--panel); border-radius:16px; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.08)}
+    .wrap{width:100%; max-width:980px; margin:18px; padding:18px; background:var(--panel); border-radius:16px; box-shadow:var(--shadow); border:1px solid var(--border)}
     .hdr{display:flex; gap:12px; align-items:center; margin-bottom:10px}
     .logo{width:40px; height:40px; display:grid; place-items:center; border-radius:10px;
-      background:linear-gradient(145deg, #6C5CE7, #8B7CFF); color:#fff; font-weight:800}
+      background:linear-gradient(145deg, #6C5CE7, #8B7CFF); color:#fff; font-weight:800; letter-spacing:.5px}
     h1{font-size:22px; margin:0}
     .sub{color:var(--muted); font-size:13px}
+    .brand{display:flex; gap:8px; align-items:center; color:#6C5CE7; font-weight:700; font-size:12px}
+
     .bar{height:8px; background:#e6e8f0; border-radius:999px; overflow:hidden; margin:10px 0 18px}
     .bar>i{display:block; height:100%; width:0%; background:linear-gradient(90deg, #6C5CE7, #12c48b)}
+
     .grid{display:grid; grid-template-columns:repeat(12,1fr); gap:12px}
-    .card{grid-column:span 12; background:rgba(255,255,255,.02); border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:14px}
+    .card{grid-column:span 12; background:rgba(255,255,255,.02); border:1px solid var(--border); border-radius:14px; padding:14px}
     @media(min-width:780px){ .half{grid-column:span 6} .third{grid-column:span 4}}
+
     label.q{display:block; font-weight:700; margin:0 0 6px}
     .help{font-size:12px; color:var(--muted); margin-bottom:8px}
+
     input[type="text"], input[type="email"], textarea, select{
-      width:100%; padding:12px 12px; border-radius:12px; border:1px solid #d6daea; background:transparent; color:inherit
+      width:100%; padding:12px 12px; border-radius:12px; border:1px solid var(--border); background:transparent; color:inherit
     }
     textarea{min-height:90px; resize:vertical}
+
     .chips{display:flex; flex-wrap:wrap; gap:8px}
-    .chip{padding:10px 12px; border-radius:999px; border:1px solid #d6daea; cursor:pointer; user-select:none}
+    .chip{padding:10px 12px; border-radius:999px; border:1px solid var(--border); cursor:pointer; user-select:none}
     .chip.active{background:#6C5CE7; color:#fff; border-color:transparent}
+
     .seg{display:flex; gap:6px; flex-wrap:wrap}
-    .seg button{padding:10px 12px; border-radius:10px; border:1px solid #d6daea; background:transparent; color:inherit; cursor:pointer}
+    .seg button{padding:10px 12px; border-radius:10px; border:1px solid var(--border); background:transparent; color:inherit; cursor:pointer}
     .seg button.active{background:#6C5CE7; color:#fff; border-color:transparent}
-    .nps{display:flex; gap:6px; flex-wrap:wrap}
-    .nps button{width:44px; height:36px; border-radius:10px; border:1px solid #d6daea; background:transparent; cursor:pointer}
+
+    .nps{display:flex; gap:6px; flex-wrap:wrap} /* kept for number rows, not NPS */
+    .nps button{width:44px; height:36px; border-radius:10px; border:1px solid var(--border); background:transparent; cursor:pointer}
     .nps button.active{background:#6C5CE7; color:#fff; border-color:transparent; transform:translateY(-1px)}
+
     .rate{display:flex; gap:6px}
-    .rate button{flex:1; padding:10px; border-radius:10px; border:1px solid #d6daea; background:transparent; cursor:pointer}
+    .rate button{flex:1; padding:10px; border-radius:10px; border:1px solid var(--border); background:transparent; cursor:pointer}
     .rate button.active{background:#6C5CE7; color:#fff; border-color:transparent}
+
     .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
     .btn{padding:12px 14px; border-radius:12px; border:1px solid transparent; cursor:pointer; font-weight:700}
     .primary{background:#6C5CE7; color:#fff}
-    .ghost{background:transparent; border-color:#d6daea}
+    .ghost{background:transparent; border-color:var(--border)}
     .ok{background:var(--ok); color:#fff}
     .warn{background:var(--warn); color:#000}
     .err{background:var(--err); color:#fff}
     .tiny{font-size:12px; color:var(--muted); margin-top:6px}
     .toast{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#14182a; color:#fff; padding:10px 12px; border-radius:10px; display:none}
-    .divider{height:1px; background:rgba(0,0,0,.08); margin:6px 0 14px}
+
     .badges{display:flex;gap:8px;flex-wrap:wrap;font-size:12px}
-    .badge{padding:6px 8px;border:1px dashed #d6daea;border-radius:8px;color:var(--muted)}
+    .badge{padding:6px 8px;border:1px dashed var(--border);border-radius:8px;color:var(--muted)}
+    .divider{height:1px;background:var(--border);margin:6px 0 14px}
+
+    .updates{display:flex; gap:8px; align-items:center; font-size:12px}
+    .updates a{font-weight:700; color:#6C5CE7; text-decoration:none}
+    .updates a:hover{text-decoration:underline}
+
+    .spekit-tag{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(108,92,231,.12);color:#6C5CE7;font-weight:700}
   </style>
 </head>
 <body>
@@ -78,7 +96,13 @@
       <div>
         <h1>Spekit Feedback</h1>
         <div class="sub">Help us make just-in-time learning even better—this takes ~2 minutes.</div>
+        <div class="brand"><span class="spekit-tag">Spekit • JIT + AI</span></div>
       </div>
+    </div>
+
+    <div class="updates">
+      <span>See what’s new:</span>
+      <a href="https://spekit.canny.io/changelog" target="_blank" rel="noopener">Spekit Changelog ↗</a>
     </div>
 
     <div class="bar"><i id="progress"></i></div>
@@ -95,16 +119,15 @@
       </section>
 
       <section class="card half">
-        <label class="q">Primary tools where you see Spekit</label>
+        <label class="q">Where do you use Spekit most?</label>
         <div class="help">Pick all that apply.</div>
-        <div class="chips" data-name="tools" data-type="multi">
+        <div class="chips" data-name="surfaces" data-type="multi">
           <span class="chip">Salesforce</span><span class="chip">Gmail</span><span class="chip">Outlook</span><span class="chip">LinkedIn</span>
-          <span class="chip">Gong</span><span class="chip">Outreach</span><span class="chip">ServiceNow</span><span class="chip">Workday</span>
-          <span class="chip">Other</span>
+          <span class="chip">Google Drive</span><span class="chip">Confluence</span><span class="chip">Slack</span><span class="chip">Other</span>
         </div>
       </section>
 
-      <!-- USE & NPS -->
+      <!-- USE -->
       <section class="card half">
         <label class="q">How often do you use Spekit?</label>
         <div class="seg" data-name="cadence" data-type="single">
@@ -113,9 +136,11 @@
       </section>
 
       <section class="card half">
-        <label class="q">How likely are you to recommend Spekit to a colleague?</label>
-        <div class="help">0 = Not at all likely, 10 = Extremely likely</div>
-        <div class="nps" data-name="nps" data-type="single-number"></div>
+        <label class="q">Which features do you use most?</label>
+        <div class="chips" data-name="features" data-type="multi">
+          <span class="chip">Speks</span><span class="chip">Playlists</span><span class="chip">Browser Extension</span><span class="chip">Search</span>
+          <span class="chip">Spotlights</span><span class="chip">Deal Rooms</span><span class="chip">Walkthroughs</span><span class="chip">Trackable Links</span>
+        </div>
       </section>
 
       <!-- QUALITY DIMENSIONS -->
@@ -160,26 +185,24 @@
 
       <section class="card third">
         <label class="q">Search quality</label>
-        <div class="help">Finding the right Spek/playbook fast.</div>
+        <div class="help">Finding the right Spek or playbook fast.</div>
         <div class="rate" data-name="search" data-type="likert5">
           <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
         </div>
       </section>
 
-      <!-- FEATURES -->
+      <!-- FEATURE-SPECIFIC FEEDBACK -->
       <section class="card half">
-        <label class="q">Which features do you use most?</label>
-        <div class="chips" data-name="features" data-type="multi">
-          <span class="chip">Speks</span><span class="chip">Playlists</span><span class="chip">Browser Extension</span><span class="chip">Search</span>
-          <span class="chip">Walkthroughs</span><span class="chip">Trackable Links</span><span class="chip">Slack share</span><span class="chip">Other</span>
+        <label class="q">Spotlights helpfulness</label>
+        <div class="rate" data-name="spotlights_helpfulness" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
         </div>
       </section>
 
       <section class="card half">
-        <label class="q">What’s the biggest friction you hit lately?</label>
-        <div class="chips" data-name="friction" data-type="single">
-          <span class="chip">Couldn’t find content</span><span class="chip">AI not accurate</span><span class="chip">Out-of-date content</span>
-          <span class="chip">Too slow</span><span class="chip">Integrations flaky</span><span class="chip">Other</span>
+        <label class="q">Deal Rooms usefulness</label>
+        <div class="rate" data-name="dealrooms_usefulness" data-type="likert5">
+          <button type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">4</button><button type="button">5</button>
         </div>
       </section>
 
@@ -214,14 +237,14 @@
         <div class="badges">
           <span class="badge">Auto-saves locally</span>
           <span class="badge">Works offline</span>
-          <span class="badge">Export to JSON / Clipboard / Email</span>
+          <span class="badge">Submit to Google Sheet</span>
+          <span class="badge">Export to JSON / Clipboard</span>
         </div>
         <div class="divider"></div>
         <div class="actions">
-          <button type="button" class="btn primary" id="btn-submit">Review & Export</button>
-          <button type="button" class="btn ghost" id="btn-copy">Copy JSON</button>
-          <button type="button" class="btn ghost" id="btn-download">Download JSON</button>
-          <button type="button" class="btn ghost" id="btn-email">Email</button>
+          <button type="button" class="btn primary" id="btn-submit">Submit</button>
+          <button type="button" class="btn ghost"   id="btn-copy">Copy JSON</button>
+          <button type="button" class="btn ghost"   id="btn-download">Download JSON</button>
           <button type="reset"  class="btn err">Reset</button>
         </div>
         <div class="tiny">Tip: You can keep filling later — your answers auto-save in this browser.</div>
@@ -232,38 +255,33 @@
   </main>
 
   <script>
+    // --------- CONFIG: paste your Google Apps Script Web App URL below ----------
+    // Create it with the Apps Script snippet in the comment at the bottom.
+    const SUBMIT_URL = ""; // e.g., "https://script.google.com/macros/s/AKfycb.../exec"
+    // ----------------------------------------------------------------------------
+
     // ------- tiny utils -------
     const $ = sel => document.querySelector(sel);
     const $$ = sel => Array.from(document.querySelectorAll(sel));
-    const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.style.display='block'; setTimeout(()=>t.style.display='none', 1600); };
-    const lsKey = 'spekit-feedback-v1';
-
-    // Build NPS 0..10 buttons
-    (() => {
-      const box = $('[data-name="nps"]');
-      for(let i=0;i<=10;i++){
-        const b=document.createElement('button'); b.type='button'; b.textContent=String(i);
-        box.appendChild(b);
-      }
-    })();
+    const toast = (msg) => { const t = $('#toast'); t.textContent = msg; t.style.display='block'; setTimeout(()=>t.style.display='none', 1800); };
+    const lsKey = 'spekit-feedback-v2';
 
     // Chips & Segmented control interactions
     function wireSelectable(container){
       const type = container.dataset.type;
       container.addEventListener('click', (e)=>{
         const chip = e.target.closest('.chip,button'); if(!chip) return;
-        if(type==='single' || type==='single-number'){
+        if(type==='single'){
           (container.matches('.chips')? container.querySelectorAll('.chip'): container.querySelectorAll('button'))
             .forEach(el=>el.classList.remove('active'));
           chip.classList.add('active');
         } else if(type==='multi'){
           chip.classList.toggle('active');
         }
-        save();
-        updateProgress();
+        save(); updateProgress();
       });
     }
-    $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(wireSelectable);
+    $$('.chips,[data-type="single"],[data-type="likert5"]').forEach(wireSelectable);
 
     // Likert group (1-5) acts like single
     $$('[data-type="likert5"]').forEach(g=>g.addEventListener('click',(e)=>{
@@ -277,7 +295,7 @@
       try{
         const data = JSON.parse(localStorage.getItem(lsKey) || '{}');
         // chips & buttons
-        $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(g=>{
+        $$('.chips,[data-type="single"],[data-type="likert5"]').forEach(g=>{
           const name = g.dataset.name; const type = g.dataset.type; const val = data[name];
           if(!val) return;
           if(type==='multi' && Array.isArray(val)){
@@ -294,18 +312,18 @@
 
     function gather(){
       const out = {};
-      $$('.chips,[data-type="single"],[data-type="likert5"],[data-type="single-number"]').forEach(g=>{
+      $$('.chips,[data-type="single"],[data-type="likert5"]').forEach(g=>{
         const name = g.dataset.name; const type = g.dataset.type;
         if(type==='multi'){
           out[name] = Array.from(g.querySelectorAll('.chip.active')).map(ch=>ch.textContent);
-        } else if(type==='single-number' || type==='single' || type==='likert5'){
+        } else {
           const a = g.querySelector('.chip.active,button.active');
           if(a) out[name] = isNaN(a.textContent) ? a.textContent : Number(a.textContent);
         }
       });
       ['story','wish','email'].forEach(n=>{ const el=document.querySelector(`[name="${n}"]`); out[n]=el.value.trim(); });
+
       // derived
-      if(typeof out.nps==='number') out.nps_type = out.nps >=9 ? 'Promoter' : (out.nps<=6 ? 'Detractor' : 'Passive');
       out.timestamp = new Date().toISOString();
       out.userAgent = navigator.userAgent;
       return out;
@@ -313,44 +331,68 @@
 
     function save(){ try{ localStorage.setItem(lsKey, JSON.stringify(gather())); }catch(e){} }
     function updateProgress(){
-      const total = 10; // count of "scored" prompts for progress (rough, on purpose)
+      const keys = ['role','surfaces','cadence','features','findability','ai_accuracy','speed','freshness','integrations','search','spotlights_helpfulness','dealrooms_usefulness'];
       const g = gather();
-      let done = 0;
-      ['role','tools','cadence','nps','findability','ai_accuracy','speed','freshness','integrations','search'].forEach(k=>{
-        if(g[k] && ((Array.isArray(g[k]) && g[k].length) || (!Array.isArray(g[k])))) done++;
-      });
-      $('#progress').style.width = Math.round((done/total)*100)+'%';
+      const done = keys.reduce((acc,k)=> acc + (g[k] && ((Array.isArray(g[k]) && g[k].length) || (!Array.isArray(g[k])) ) ? 1 : 0), 0);
+      const pct = Math.round((done/keys.length)*100);
+      $('#progress').style.width = pct+'%';
     }
 
     // Wire text inputs
     $$('textarea,input[type="email"]').forEach(el=>el.addEventListener('input', ()=>{ save(); updateProgress(); }));
 
-    // Actions
+    // Export helpers
+    function downloadJSON(filename, dataObj) {
+      const blob = new Blob([JSON.stringify(dataObj, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=filename; a.click();
+      URL.revokeObjectURL(url);
+    }
+
     $('#btn-copy').addEventListener('click', async ()=>{
       const data = JSON.stringify(gather(), null, 2);
       try{ await navigator.clipboard.writeText(data); toast('Copied JSON'); }catch{ toast('Copy failed'); }
     });
 
     $('#btn-download').addEventListener('click', ()=>{
-      const blob = new Blob([JSON.stringify(gather(), null, 2)], {type:'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='spekit-feedback.json'; a.click();
-      URL.revokeObjectURL(url);
+      downloadJSON('spekit-feedback-v2.json', gather());
     });
 
-    $('#btn-email').addEventListener('click', ()=>{
-      const to = ''; // optionally hardcode a mailbox, e.g., 'feedback@spekit.co'
-      const subject = encodeURIComponent('Spekit Feedback');
-      const body = encodeURIComponent(JSON.stringify(gather(), null, 2));
-      const href = `mailto:${to}?subject=${subject}&body=${body}`;
-      window.location.href = href;
-    });
+    // Submit to Google Sheet via Apps Script Web App
+    async function submitToSheet(payload){
+      if(!SUBMIT_URL){ toast('Submit URL not set'); return { ok:false, status:0, error:'No SUBMIT_URL' }; }
+      try{
+        const res = await fetch(SUBMIT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(payload),
+          mode: 'cors',
+        });
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const json = await res.json().catch(()=>({ ok:true }));
+        return { ok:true, status:res.status, json };
+      }catch(e){
+        return { ok:false, status:0, error:e.message };
+      }
+    }
 
-    $('#btn-submit').addEventListener('click', ()=>{
+    $('#btn-submit').addEventListener('click', async ()=>{
       const g = gather();
+
+      // light validation
       if(!g.role){ toast('Please select your role'); return; }
-      if(typeof g.nps !== 'number'){ toast('Please choose an NPS score'); return; }
-      toast('Looks good! Use Copy/Download/Email to send it.');
+      if(!(g.findability || g.ai_accuracy || g.speed || g.freshness || g.integrations || g.search)){ toast('Please rate at least one category'); return; }
+
+      // POST
+      toast('Submitting…');
+      const res = await submitToSheet(g);
+      if(res.ok){
+        toast('Thanks! Submitted ✅');
+        // keep answers locally in case user wants to export too
+      }else{
+        toast('Submit failed — copied JSON to clipboard');
+        try{ await navigator.clipboard.writeText(JSON.stringify(g, null, 2)); }catch{}
+      }
     });
 
     // Reset clears localStorage
@@ -361,5 +403,81 @@
     // init
     restore(); updateProgress();
   </script>
+
+  <!--
+    ====== Google Apps Script (paste into script.google.com) ======
+    1) New project → Services: none needed. Replace Code.gs with below.
+    2) Set SHEET_ID to your Google Sheet ID (create a blank sheet first).
+    3) Deploy → New deployment → Type: Web app → "Anyone" can access.
+    4) Copy the Web App URL and paste it into SUBMIT_URL above.
+
+    // Code.gs
+    const SHEET_ID = 'PUT_YOUR_SHEET_ID_HERE'; // e.g., 1AbC...xyz
+    const SHEET_NAME = 'Responses';             // auto-created if missing
+    const CORS_ORIGIN = '*'; // or set to "https://spekit-jit.github.io"
+
+    function doPost(e){
+      try{
+        const payload = JSON.parse(e.postData.contents || '{}');
+
+        const ss = SpreadsheetApp.openById(SHEET_ID);
+        const sheet = ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+
+        // Ensure header row
+        const headers = [
+          'timestamp','role','surfaces','cadence','features',
+          'findability','ai_accuracy','speed','freshness','integrations','search',
+          'spotlights_helpfulness','dealrooms_usefulness',
+          'story','wish','followup','email','userAgent'
+        ];
+        if (sheet.getLastRow() === 0){
+          sheet.appendRow(headers);
+        }
+
+        // Normalize arrays to comma strings
+        const asText = v => Array.isArray(v) ? v.join(', ') : v;
+
+        const row = [
+          payload.timestamp || new Date().toISOString(),
+          asText(payload.role),
+          asText(payload.surfaces),
+          asText(payload.cadence),
+          asText(payload.features),
+          asText(payload.findability),
+          asText(payload.ai_accuracy),
+          asText(payload.speed),
+          asText(payload.freshness),
+          asText(payload.integrations),
+          asText(payload.search),
+          asText(payload.spotlights_helpfulness),
+          asText(payload.dealrooms_usefulness),
+          asText(payload.story),
+          asText(payload.wish),
+          asText(payload.followup),
+          asText(payload.email),
+          asText(payload.userAgent),
+        ];
+        sheet.appendRow(row);
+
+        return ContentService
+          .createTextOutput(JSON.stringify({ ok:true }))
+          .setMimeType(ContentService.MimeType.JSON)
+          .setHeaders({ 'Access-Control-Allow-Origin': CORS_ORIGIN, 'Access-Control-Allow-Headers':'Content-Type' });
+
+      }catch(err){
+        return ContentService
+          .createTextOutput(JSON.stringify({ ok:false, error:String(err) }))
+          .setMimeType(ContentService.MimeType.JSON)
+          .setHeaders({ 'Access-Control-Allow-Origin': CORS_ORIGIN, 'Access-Control-Allow-Headers':'Content-Type' });
+      }
+    }
+
+    function doGet(){
+      return ContentService
+        .createTextOutput('OK')
+        .setMimeType(ContentService.MimeType.TEXT)
+        .setHeaders({ 'Access-Control-Allow-Origin': CORS_ORIGIN });
+    }
+  -->
 </body>
 </html>
