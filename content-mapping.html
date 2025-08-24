@@ -26,7 +26,7 @@
   .wrap {
     width: 100%; max-width: 1000px; padding: 20px; margin: 20px;
     background: var(--panel); border: 1px solid var(--ring); border-radius: var(--radius);
-    box-shadow: var(--shadow); position: relative; transition: transform 0.2s ease;
+    box-shadow: var(--shadow); position: relative;
     transform-origin: top center;
   }
   .bar {
@@ -38,7 +38,6 @@
   .ghost, .primary {
     border: 1px solid var(--ring); padding: 10px 14px; border-radius: var(--radius);
     font-weight: 600; cursor: pointer; background: var(--panel); color: var(--ink);
-    transition: background 0.2s;
   }
   .primary { background: var(--accent); color: #fff; }
   .ghost:hover, .primary:hover { background: var(--accent); color: #fff; }
@@ -50,7 +49,7 @@
   .btn {
     padding: 10px 16px; min-height: 40px; border-radius: var(--radius); border: 1px solid var(--ring);
     color: var(--ink); font-weight: 600; text-align: center; max-width: 300px;
-    cursor: text; background: var(--panel); transition: box-shadow 0.2s;
+    cursor: text; background: var(--panel);
   }
   .btn:focus { box-shadow: 0 0 0 2px var(--accent); }
   .btn.small { min-height: 36px; padding: 8px 12px; font-weight: 500; max-width: 260px; font-size: 15px; }
@@ -59,7 +58,7 @@
   .act {
     width: 32px; height: 32px; border-radius: var(--radius); border: 1px solid var(--ring);
     background: var(--panel); color: var(--ink); cursor: pointer; font-weight: 600;
-    display: none; transition: none;
+    display: none;
   }
   .parent-head.active .act, .chip.active .act { display: inline-flex; }
   .act:hover { background: var(--accent); color: #fff; }
@@ -72,7 +71,7 @@
   .chip .actions { display: flex; gap: 6px; justify-content: center; }
   .chip .mini { width: 28px; height: 28px; font-size: 13px; }
   .tiny-text { color: var(--muted); font-size: 12px; margin-top: 10px; text-align: center; }
-  path { stroke: var(--accent); stroke-width: 3; stroke-opacity: 0.8; stroke-linecap: round; fill: none; }
+  path { stroke: var(--accent); stroke-width: 3; stroke-opacity: 0.9; stroke-linecap: round; fill: none; }
 </style>
 </head>
 <body>
@@ -102,6 +101,14 @@ try {
   if (!wrap) throw new Error('Wrap element not found');
   const addParentBtn = document.getElementById('addParent');
   if (!addParentBtn) throw new Error('Add parent button not found');
+  const zoomInBtn = document.getElementById('zoomIn');
+  const zoomOutBtn = document.getElementById('zoomOut');
+  const zoomResetBtn = document.getElementById('zoomReset');
+  const clearBtn = document.getElementById('clearBtn');
+  const exportPdfBtn = document.getElementById('exportPdfBtn');
+  if (!zoomInBtn || !zoomOutBtn || !zoomResetBtn || !clearBtn || !exportPdfBtn) {
+    throw new Error('Control buttons not found');
+  }
 
   let parentId = 0;
   let parents = [];
@@ -118,6 +125,7 @@ try {
     el.spellcheck = false;
     el.textContent = text;
     el.addEventListener('click', () => {
+      console.log(`Pill clicked: ${key}`);
       el.focus();
       const parent = el.closest('.parent-head, .chip');
       if (parent) parent.classList.add('active');
@@ -128,11 +136,15 @@ try {
       sel.addRange(range);
     });
     el.addEventListener('blur', () => {
+      console.log(`Pill blurred: ${key}`);
       const parent = el.closest('.parent-head, .chip');
       if (parent) parent.classList.remove('active');
     });
     el.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        el.blur();
+      }
     });
     return el;
   }
@@ -166,8 +178,13 @@ try {
       head.className = 'parent-head';
 
       const pill = makeEditablePill(model.title, model.id);
-      pill.addEventListener('input', () => { model.title = pill.textContent.trim() || 'parent topic'; });
-      pill.addEventListener('blur', () => { pill.textContent = model.title; drawLines(); });
+      pill.addEventListener('input', () => {
+        model.title = pill.textContent.trim() || 'parent topic';
+      });
+      pill.addEventListener('blur', () => {
+        pill.textContent = model.title;
+        drawLines();
+      });
       head.appendChild(pill);
 
       const addSub = document.createElement('button');
@@ -175,8 +192,8 @@ try {
       addSub.title = 'Add sub-topic';
       addSub.textContent = '+';
       addSub.addEventListener('click', () => {
+        console.log('Add sub-topic button clicked');
         try {
-          console.log('Add sub-topic button clicked');
           const newSub = newSubModel();
           model.subs.push(newSub);
           renderSubs(newSub.id);
@@ -192,8 +209,8 @@ try {
       deleteParent.title = 'Delete this parent topic';
       deleteParent.textContent = '×';
       deleteParent.addEventListener('click', () => {
+        console.log('Delete parent button clicked');
         try {
-          console.log('Delete parent button clicked');
           if (confirm('Delete this parent topic and all its sub-topics?')) {
             const index = parents.findIndex(p => p.id === model.id);
             if (index > -1) parents.splice(index, 1);
@@ -220,18 +237,25 @@ try {
             chip.className = 'chip';
 
             const sp = makeEditablePill(sub.title, sub.id, 'small');
-            sp.addEventListener('input', () => { sub.title = sp.textContent.trim() || 'sub-topic'; });
-            sp.addEventListener('blur', () => { sp.textContent = sub.title; drawLines(); });
+            sp.addEventListener('input', () => {
+              sub.title = sp.textContent.trim() || 'sub-topic';
+            });
+            sp.addEventListener('blur', () => {
+              sp.textContent = sub.title;
+              drawLines();
+            });
             chip.appendChild(sp);
 
             const actions = document.createElement('div');
             actions.className = 'actions';
 
             const left = document.createElement('button');
-            left.className = 'mini act'; left.title = 'Add sub-topic to the left'; left.textContent = '←';
+            left.className = 'mini act';
+            left.title = 'Add sub-topic to the left';
+            left.textContent = '←';
             left.addEventListener('click', () => {
+              console.log('Add sub-topic left button clicked');
               try {
-                console.log('Add sub-topic left button clicked');
                 const newSub = newSubModel();
                 model.subs.splice(index, 0, newSub);
                 renderSubs(newSub.id);
@@ -242,10 +266,12 @@ try {
             });
 
             const right = document.createElement('button');
-            right.className = 'mini act'; right.title = 'Add sub-topic to the right'; right.textContent = '→';
+            right.className = 'mini act';
+            right.title = 'Add sub-topic to the right';
+            right.textContent = '→';
             right.addEventListener('click', () => {
+              console.log('Add sub-topic right button clicked');
               try {
-                console.log('Add sub-topic right button clicked');
                 const newSub = newSubModel();
                 model.subs.splice(index + 1, 0, newSub);
                 renderSubs(newSub.id);
@@ -256,10 +282,12 @@ try {
             });
 
             const addSubSub = document.createElement('button');
-            addSubSub.className = 'mini act'; addSubSub.title = 'Add sub-sub-topic'; addSubSub.textContent = '+';
+            addSubSub.className = 'mini act';
+            addSubSub.title = 'Add sub-sub-topic';
+            addSubSub.textContent = '+';
             addSubSub.addEventListener('click', () => {
+              console.log('Add sub-sub-topic button clicked');
               try {
-                console.log('Add sub-sub-topic button clicked');
                 const newSubSub = newSubSubModel();
                 sub.subsubs.push(newSubSub);
                 renderSubs(newSubSub.id);
@@ -270,10 +298,12 @@ try {
             });
 
             const del = document.createElement('button');
-            del.className = 'mini act'; del.title = 'Delete this sub-topic'; del.textContent = '×';
+            del.className = 'mini act';
+            del.title = 'Delete this sub-topic';
+            del.textContent = '×';
             del.addEventListener('click', () => {
+              console.log('Delete sub-topic button clicked');
               try {
-                console.log('Delete sub-topic button clicked');
                 if (confirm('Delete this sub-topic and its sub-sub-topics?')) {
                   model.subs.splice(index, 1);
                   renderSubs();
@@ -294,18 +324,25 @@ try {
               subsubChip.className = 'chip';
 
               const ssp = makeEditablePill(subsub.title, subsub.id, 'tiny');
-              ssp.addEventListener('input', () => { subsub.title = ssp.textContent.trim() || 'sub-sub-topic'; });
-              ssp.addEventListener('blur', () => { ssp.textContent = subsub.title; drawLines(); });
+              ssp.addEventListener('input', () => {
+                subsub.title = ssp.textContent.trim() || 'sub-sub-topic';
+              });
+              ssp.addEventListener('blur', () => {
+                ssp.textContent = subsub.title;
+                drawLines();
+              });
               subsubChip.appendChild(ssp);
 
               const subsubActions = document.createElement('div');
               subsubActions.className = 'actions';
 
               const ssLeft = document.createElement('button');
-              ssLeft.className = 'mini act'; ssLeft.title = 'Add sub-sub-topic to the left'; ssLeft.textContent = '←';
+              ssLeft.className = 'mini act';
+              ssLeft.title = 'Add sub-sub-topic to the left';
+              ssLeft.textContent = '←';
               ssLeft.addEventListener('click', () => {
+                console.log('Add sub-sub-topic left button clicked');
                 try {
-                  console.log('Add sub-sub-topic left button clicked');
                   const newSubSub = newSubSubModel();
                   sub.subsubs.splice(ssIndex, 0, newSubSub);
                   renderSubs(newSubSub.id);
@@ -316,10 +353,12 @@ try {
               });
 
               const ssRight = document.createElement('button');
-              ssRight.className = 'mini act'; ssRight.title = 'Add sub-sub-topic to the right'; ssRight.textContent = '→';
+              ssRight.className = 'mini act';
+              ssRight.title = 'Add sub-sub-topic to the right';
+              ssRight.textContent = '→';
               ssRight.addEventListener('click', () => {
+                console.log('Add sub-sub-topic right button clicked');
                 try {
-                  console.log('Add sub-sub-topic right button clicked');
                   const newSubSub = newSubSubModel();
                   sub.subsubs.splice(ssIndex + 1, 0, newSubSub);
                   renderSubs(newSubSub.id);
@@ -330,10 +369,12 @@ try {
               });
 
               const ssDel = document.createElement('button');
-              ssDel.className = 'mini act'; ssDel.title = 'Delete this sub-sub-topic'; ssDel.textContent = '×';
+              ssDel.className = 'mini act';
+              ssDel.title = 'Delete this sub-sub-topic';
+              ssDel.textContent = '×';
               ssDel.addEventListener('click', () => {
+                console.log('Delete sub-sub-topic button clicked');
                 try {
-                  console.log('Delete sub-sub-topic button clicked');
                   if (confirm('Delete this sub-sub-topic?')) {
                     sub.subsubs.splice(ssIndex, 1);
                     renderSubs();
@@ -355,7 +396,10 @@ try {
           drawLines();
           if (newId) {
             const newPill = subs.querySelector(`.btn[data-id="${newId}"]`);
-            if (newPill) newPill.focus();
+            if (newPill) {
+              newPill.focus();
+              newPill.closest('.chip').classList.add('active');
+            }
           }
         } catch (e) {
           console.error('Failed to render subs:', e);
@@ -370,18 +414,18 @@ try {
           const parentCenterX = (parentRect.left - wrapRect.left + parentRect.width / 2) / zoomLevel;
           const parentBottomY = (parentRect.bottom - wrapRect.top + 8) / zoomLevel;
 
-          const subPills = subs.querySelectorAll('.btn.small');
           svg.innerHTML = '';
+          const subPills = subs.querySelectorAll('.btn.small');
           subPills.forEach(sp => {
             const spRect = sp.getBoundingClientRect();
             const spCenterX = (spRect.left - wrapRect.left + spRect.width / 2) / zoomLevel;
             const spTopY = (spRect.top - wrapRect.top - 8) / zoomLevel;
-            const midY = (parentBottomY + spTopY) / 2;
+            const midY = parentBottomY + (spTopY - parentBottomY) * 0.3;
 
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', `M${parentCenterX} ${parentBottomY} C ${parentCenterX} ${midY}, ${spCenterX} ${midY}, ${spCenterX} ${spTopY}`);
+            path.setAttribute('d', `M${parentCenterX},${parentBottomY} C${parentCenterX},${midY} ${spCenterX},${midY} ${spCenterX},${spTopY}`);
             path.setAttribute('stroke-width', '3');
-            path.setAttribute('stroke-opacity', '0.8');
+            path.setAttribute('stroke-opacity', '0.9');
             svg.appendChild(path);
 
             const subsubPills = sp.parentElement.querySelectorAll('.btn.tiny');
@@ -390,12 +434,12 @@ try {
               const sspCenterX = (sspRect.left - wrapRect.left + sspRect.width / 2) / zoomLevel;
               const sspTopY = (sspRect.top - wrapRect.top - 8) / zoomLevel;
               const subBottomY = (spRect.bottom - wrapRect.top + 8) / zoomLevel;
-              const subMidY = (subBottomY + sspTopY) / 2;
+              const subMidY = subBottomY + (sspTopY - subBottomY) * 0.3;
 
               const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-              subPath.setAttribute('d', `M${spCenterX} ${subBottomY} C ${spCenterX} ${subMidY}, ${sspCenterX} ${subMidY}, ${sspCenterX} ${sspTopY}`);
+              subPath.setAttribute('d', `M${spCenterX},${subBottomY} C${spCenterX},${subMidY} ${sspCenterX},${subMidY} ${sspCenterX},${sspTopY}`);
               subPath.setAttribute('stroke-width', '2');
-              subPath.setAttribute('stroke-opacity', '0.7');
+              subPath.setAttribute('stroke-opacity', '0.9');
               svg.appendChild(subPath);
             });
           });
@@ -444,6 +488,7 @@ try {
 
   function exportPDF() {
     try {
+      console.log('Export PDF button clicked');
       document.querySelectorAll('.act').forEach(btn => btn.style.display = 'none');
       const pdfWrap = document.createElement('div');
       pdfWrap.style.background = 'white';
@@ -511,32 +556,31 @@ try {
   }
 
   function updateZoom(newZoom) {
+    console.log('Zoom updated:', newZoom);
     zoomLevel = Math.max(zoomMin, Math.min(zoomMax, newZoom));
     wrap.style.transform = `scale(${zoomLevel})`;
     wrap.style.minHeight = `${board.scrollHeight / zoomLevel + 100}px`;
-    console.log('Zoom updated:', zoomLevel);
     document.querySelectorAll('.parent').forEach(p => {
-      const subs = p.querySelector('.subs');
-      if (subs) p.querySelector('svg').innerHTML = '';
       drawLines();
     });
   }
 
-  document.getElementById('zoomIn').addEventListener('click', () => {
+  zoomInBtn.addEventListener('click', () => {
     console.log('Zoom in button clicked');
     updateZoom(zoomLevel + zoomStep);
   });
-  document.getElementById('zoomOut').addEventListener('click', () => {
+  zoomOutBtn.addEventListener('click', () => {
     console.log('Zoom out button clicked');
     updateZoom(zoomLevel - zoomStep);
   });
-  document.getElementById('zoomReset').addEventListener('click', () => {
+  zoomResetBtn.addEventListener('click', () => {
     console.log('Zoom reset button clicked');
     updateZoom(1);
   });
 
   wrap.addEventListener('wheel', (e) => {
     e.preventDefault();
+    console.log('Wheel zoom triggered');
     const delta = e.deltaY > 0 ? -zoomStep : zoomStep;
     updateZoom(zoomLevel + delta);
   });
@@ -552,6 +596,7 @@ try {
   });
   wrap.addEventListener('touchmove', (e) => {
     if (e.touches.length === 2) {
+      console.log('Pinch zoom triggered');
       const distance = Math.hypot(
         e.touches[0].pageX - e.touches[1].pageX,
         e.touches[0].pageY - e.touches[1].pageY
@@ -563,8 +608,8 @@ try {
   });
 
   addParentBtn.addEventListener('click', addParent);
-  document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
-  document.getElementById('clearBtn').addEventListener('click', clearMap);
+  exportPdfBtn.addEventListener('click', exportPDF);
+  clearBtn.addEventListener('click', clearMap);
   addParent(false);
   console.log('App initialized');
 } catch (e) {
