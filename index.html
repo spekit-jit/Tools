@@ -7,15 +7,13 @@
 <title>tools</title>
 <style>
   :root{ --bg:#0f1220; --panel:#14182a; --ink:#e9ecf8; --radius:16px; --shadow:0 16px 40px rgba(0,0,0,.38) }
-  @media (prefers-color-scheme: light){ :root{ --bg:#f6f7fb; --panel:#fff; --ink:#0f1426; --shadow:0 18px 40px rgba(12,24,60,.08) } }
-  *{box-sizing:border-box}
-  html,body{height:100%}
+  @media (prefers-color-scheme: light){ :root{ --bg:#f6f7fb; --panel:#ffffff; --ink:#0f1426; --shadow:0 18px 40px rgba(12,24,60,.08) } }
+  *{box-sizing:border-box} html,body{height:100%}
   body{
     margin:0; color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";
-    background:
-      radial-gradient(1200px 520px at 0% -10%, rgba(110,86,207,.25), transparent 60%),
-      radial-gradient(900px 360px at 110% 0%, rgba(69,231,179,.20), transparent 60%),
-      var(--bg);
+    background: radial-gradient(1200px 520px at 0% -10%, rgba(110,86,207,.25), transparent 60%),
+               radial-gradient(900px 360px at 110% 0%, rgba(69,231,179,.20), transparent 60%),
+               var(--bg);
     display:flex; align-items:stretch; justify-content:center;
   }
   .board{ width:100%; max-width:1100px; margin:16px; padding:16px; background:var(--panel);
@@ -28,98 +26,67 @@
     text-decoration:none; text-align:center; padding:14px 12px; min-height:56px;
     border-radius:14px; color:#fff; font-weight:700; letter-spacing:.2px;
     border:1px solid rgba(255,255,255,.12); box-shadow:0 12px 26px rgba(0,0,0,.25);
-    transition:transform .06s, box-shadow .12s; word-break:break-word; backdrop-filter:saturate(110%)
+    transition:transform .06s, box-shadow .12s; word-break:break-word; backdrop-filter:saturate(110%);
   }
   @media (max-width:980px){ a.tool{grid-column:span 4} }
   @media (max-width:640px){ a.tool{grid-column:span 2} }
   a.tool:hover{ transform:translateY(-1px); box-shadow:0 14px 30px rgba(0,0,0,.30) }
-  .tiny{ margin-top:10px; font:12px/1.3 ui-monospace,monospace; color:#9aa3bf; opacity:.85; text-align:center }
+  .tiny{ margin-top:10px; font:12px/1.3 ui-monospace,monospace; color:#9aa3bf; text-align:center; opacity:.85; display:none }
 </style>
 </head>
 <body>
   <div class="board">
     <div id="grid" class="grid"></div>
-    <div id="status" class="tiny"></div>
+    <div id="note" class="tiny"></div>
   </div>
 
 <script>
-/* ==================== CONFIG ==================== */
+/* ---------------- live-on-load, API-only listing ---------------- */
 const OWNER = "spekit-jit";
 const REPO  = "spekit-jit.github.io";
 const API   = `https://api.github.com/repos/${OWNER}/${REPO}/contents/tools`;
-const LOCAL_INDEX = "./index-data.json"; // preferred
-const LOCAL_LEGACY = "./tools.json";     // legacy fallback (array of filenames)
 
-/* LAST-DITCH INLINE LIST (edit this if everything else fails) */
-const INLINE_FILES = [
-  // "dealrooms.html", "meeting.html", "spekit-content-strategy.html"
-];
+const grid = document.getElementById("grid");
+const note = document.getElementById("note");
 
-/* ==================== DOM ==================== */
-const grid   = document.getElementById("grid");
-const status = document.getElementById("status");
-
-/* ==================== HELPERS ==================== */
 function hash(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function hueFromName(name){ return hash(name)%360; }
 function emojiFor(name){ const e=["✨","🚀","🧩","🛠️","⚡","📊","🧠","📎","🎯","🧪","📁","🗂️","🔧","📐","🧭","💡","🪄","🔗","🖇️","📌"]; return e[ hash(name)%e.length ]; }
 function stripExt(s){ return s.replace(/\.html?$/i,''); }
-function linkHref(file){ return `${location.origin}/tools/${encodeURIComponent(file).replace(/%2F/gi,'/')}`; } // keep subpaths if any
-function makeLink(file){
+function makeButton(file){
   const hue=hueFromName(file);
   const a=document.createElement("a");
-  a.className="tool"; a.href=linkHref(file); a.target="_blank"; a.rel="noopener";
-  a.style.background=`linear-gradient(180deg, hsl(${hue} 75% 46%), hsl(${(hue+24)%360} 78% 44%))`;
-  a.textContent = stripExt(file) + " " + emojiFor(file); a.title=file;
+  a.className="tool";
+  a.href = `${location.origin}/tools/${encodeURIComponent(file)}`;
+  a.target="_blank"; a.rel="noopener";
+  a.style.background = `linear-gradient(180deg, hsl(${hue} 75% 46%), hsl(${(hue+24)%360} 78% 44%))`;
+  a.textContent = stripExt(file) + " " + emojiFor(file);
+  a.title = file;
   return a;
 }
-function render(files, source, updated){
+function render(files){
   grid.innerHTML = "";
-  const list = (files||[])
-    .filter(n => /\.html?$/i.test(n))
-    .filter(n => !/^index\.html?$/i.test(n))
-    .sort((a,b)=>a.localeCompare(b));
-  list.forEach(n => grid.appendChild(makeLink(n)));
-  status.textContent = `${list.length} file(s) • ${source}` + (updated ? ` • ${updated}` : "");
+  files.filter(n=>/\.html?$/i.test(n))
+       .filter(n=>!/^index\.html?$/i.test(n))
+       .sort((a,b)=>a.localeCompare(b))
+       .forEach(n=>grid.appendChild(makeButton(n)));
 }
 
-/* ==================== SOURCES ==================== */
-async function fromLocalIndex(){
-  const res = await fetch(LOCAL_INDEX+"?cb="+Date.now(), {cache:"no-store"});
-  if(!res.ok) throw new Error("local "+res.status);
-  const data = await res.json();
-  if (Array.isArray(data)) return { files:data, updated:null, source:"index-data.json[array]" };
-  if (data && Array.isArray(data.files)) return { files:data.files, updated:data.updated||null, source:"index-data.json" };
-  throw new Error("local bad shape");
-}
-async function fromLegacy(){
-  const res = await fetch(LOCAL_LEGACY+"?cb="+Date.now(), {cache:"no-store"});
-  if(!res.ok) throw new Error("legacy "+res.status);
-  const arr = await res.json();
-  if (!Array.isArray(arr)) throw new Error("legacy bad shape");
-  return { files:arr, updated:null, source:"tools.json" };
-}
-async function fromAPI(){
-  const res = await fetch(API+"?cb="+Date.now(), {cache:"no-store"});
-  if(!res.ok) throw new Error("api "+res.status);
-  const data = await res.json();
-  const files = data.filter(x=>x.type==="file").map(x=>x.name);
-  return { files, updated:null, source:"GitHub API" };
-}
-
-/* ==================== BOOT ==================== */
 (async ()=>{
-  try { const {files,source,updated} = await fromLocalIndex(); render(files, source, updated); return; }
-  catch(e1){ /* continue */ }
-  try { const {files,source,updated} = await fromLegacy(); render(files, source, updated); return; }
-  catch(e2){ /* continue */ }
-  try { const {files,source,updated} = await fromAPI(); render(files, source, updated); return; }
-  catch(e3){ /* continue */ }
-  // last ditch: inline to avoid blanks
-  if (INLINE_FILES.length){
-    render(INLINE_FILES, "inline", null);
-  } else {
-    status.textContent = "0 file(s) • no index-data.json • no tools.json • API unavailable";
+  try{
+    const url = `${API}?cb=${Date.now()}&rand=${Math.random().toString(36).slice(2)}`;
+    const res = await fetch(url, {
+      cache: "no-store",
+      headers: { "Accept": "application/vnd.github.v3+json" }
+    });
+    if(!res.ok) throw new Error("API status "+res.status);
+    const data = await res.json();
+    const files = data.filter(x=>x.type==="file").map(x=>x.name);
+    render(files);
+  }catch(e){
+    // Stay clean by default; if something fails, show a tiny one-liner.
+    note.style.display = "block";
+    note.textContent = "Couldn’t list tools this moment. Refresh to retry.";
   }
 })();
 </script>
