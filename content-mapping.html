@@ -35,8 +35,6 @@
     background: var(--panel); border: 1px solid rgba(255,255,255,.08);
     border-radius: 18px; box-shadow: var(--shadow);
   }
-
-  /* Header */
   .bar { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; }
   .ghost, .primary {
     appearance: none; border: 1px solid var(--ring); padding: 10px 14px; border-radius: 12px; font-weight: 700; cursor: pointer;
@@ -52,8 +50,6 @@
     transition: opacity 0.3s;
   }
   .ghost:hover::after, .primary:hover::after { opacity: 0.3; }
-
-  /* Parent topic row */
   .parent {
     position: relative; background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), #0f1324;
     border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 14px; margin: 24px 0;
@@ -69,6 +65,7 @@
   }
   .btn:hover { box-shadow: 0 0 10px rgba(110,86,207,.5); }
   .btn.small { min-height: 38px; padding: 8px 12px; font-weight: 700; max-width: 200px; }
+  .btn.tiny { min-height: 34px; padding: 6px 10px; font-weight: 600; max-width: 180px; }
   .btn[contenteditable="true"] { caret-color: currentColor; }
   .btn:focus { box-shadow: 0 0 0 3px var(--ring), 0 12px 24px rgba(0,0,0,.25); }
   .act {
@@ -77,11 +74,8 @@
     background: #1a1f3a; color: #fff; cursor: pointer; font-weight: 900; transition: transform 0.2s, box-shadow 0.2s;
   }
   .act:hover { filter: brightness(1.05); transform: scale(1.05); box-shadow: 0 0 8px rgba(110,86,207,.5); }
-  .act-row { display: flex; gap: 8px; align-items: center; }
-
-  /* Subtopic grid under each parent */
-  .subs { margin-top: 16px; display: grid; grid-auto-rows: auto; gap: 12px; }
-  .subs-row { display: grid; grid-auto-flow: column; gap: 12px; align-items: start; justify-content: center; }
+  .subs { margin-top: 16px; }
+  .subs-row, .subsubs-row { display: grid; grid-auto-flow: column; gap: 12px; align-items: start; justify-content: center; }
   .chip {
     display: flex; flex-direction: column; align-items: center; gap: 4px;
     background: linear-gradient(180deg, rgba(255,255,255,.03), transparent);
@@ -96,16 +90,11 @@
     background: #171b33; color: #fff; cursor: pointer; font-weight: 900; font-size: 14px; transition: transform 0.2s, box-shadow 0.2s;
   }
   .mini:hover { filter: brightness(1.07); transform: scale(1.05); box-shadow: 0 0 6px rgba(110,86,207,.5); }
-
   .tiny { color: var(--muted); font-size: 12px; margin-top: 6px; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
   .new-item { animation: fadeIn 0.3s ease, pulse 0.5s ease; }
-  path {
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
-    animation: dash 1.5s ease-in-out forwards;
-  }
+  path { stroke-dasharray: 1000; stroke-dashoffset: 1000; animation: dash 1.5s ease-in-out forwards; }
   @keyframes dash { to { stroke-dashoffset: 0; } }
 </style>
 </head>
@@ -117,39 +106,36 @@
     <button id="exportBtn" class="ghost" title="Copy a JSON snapshot of your map to clipboard">📋 Copy JSON</button>
   </div>
   <div id="board"></div>
-  <div class="tiny">Tip: Click any pill to edit. Parent “+” adds a sub-topic to the last row. Sub-topic buttons below: add ← left, ↑ above (new row), → right, ⬇ below (new row), or × delete. Changes auto-save to browser storage. Lines connect hierarchy sleekly.</div>
+  <div class="tiny">Tip: Click any pill to edit. Parent “+” adds a sub-topic. Sub-topic “+” adds a sub-sub-topic. Buttons: ← left, → right, × delete. Changes auto-save to browser storage.</div>
 </div>
 
 <script>
-/* ============ Utilities ============ */
-function hash(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
-function hueFrom(s) { return hash(s) % 360; }
-function colorFor(key, lighten = 0) {
-  const h = hueFrom(key);
-  const l1 = 48 + lighten, l2 = 42 + lighten;
-  return `linear-gradient(180deg, hsl(${h} 75% ${l1}%), hsl(${(h + 22) % 360} 82% ${l2}%))`;
-}
+try {
+  const board = document.getElementById('board');
+  if (!board) throw new Error('Board element not found');
+  const addParentBtn = document.getElementById('addParent');
+  if (!addParentBtn) throw new Error('Add parent button not found');
 
-function debounce(fn, ms = 200) {
-  let timeout;
-  return function () {
-    clearTimeout(timeout);
-    timeout = setTimeout(fn, ms);
-  };
-}
+  let parentId = 0;
+  let parents = [];
 
-/* ============ DOM helpers ============ */
-function makeEditablePill(text, key, small = false) {
-  try {
+  function hash(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  function hueFrom(s) { return hash(s) % 360; }
+  function colorFor(key, lighten = 0) {
+    const h = hueFrom(key);
+    return `linear-gradient(180deg, hsl(${h} 75% ${48 + lighten}%), hsl(${(h + 22) % 360} 82% ${42 + lighten}%))`;
+  }
+
+  function makeEditablePill(text, key, size = 'normal') {
     const el = document.createElement('div');
-    el.className = 'btn' + (small ? ' small' : '');
+    el.className = `btn ${size === 'small' ? 'small' : size === 'tiny' ? 'tiny' : ''}`;
     el.dataset.id = key;
     el.contentEditable = 'true';
     el.spellcheck = false;
     el.textContent = text;
-    el.style.background = colorFor(key, small ? 5 : 0);
+    el.style.background = colorFor(key, size === 'small' ? 5 : size === 'tiny' ? 10 : 0);
     el.addEventListener('focus', () => {
-      if ((text === 'parent topic' || text === 'sub-topic') && el.textContent.trim() === text) {
+      if ((text === 'parent topic' || text === 'sub-topic' || text === 'sub-sub-topic') && el.textContent.trim() === text) {
         const range = document.createRange();
         range.selectNodeContents(el);
         const sel = window.getSelection();
@@ -161,138 +147,120 @@ function makeEditablePill(text, key, small = false) {
       if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
     });
     return el;
-  } catch (e) {
-    console.error('Failed to create editable pill:', e);
-    return null;
   }
-}
 
-/* ============ Model ============ */
-let parentId = 0;
-let parents = [];
-function newParentModel() {
-  return { id: `p${++parentId}`, title: 'parent topic', rows: [[]] };
-}
-function newSubModel() {
-  return { id: `s${Math.random().toString(36).slice(2, 8)}`, title: 'sub-topic' };
-}
-
-function saveAll() {
-  try {
-    localStorage.setItem('topicMap', JSON.stringify(parents));
-    console.log('Map saved to localStorage');
-  } catch (e) {
-    console.error('Failed to save map:', e);
-    alert('Error saving map. LocalStorage may be full or disabled.');
+  function newParentModel() {
+    return { id: `p${++parentId}`, title: 'parent topic', subs: [] };
   }
-}
+  function newSubModel() {
+    return { id: `s${Math.random().toString(36).slice(2, 8)}`, title: 'sub-topic', subsubs: [] };
+  }
+  function newSubSubModel() {
+    return { id: `ss${Math.random().toString(36).slice(2, 8)}`, title: 'sub-sub-topic' };
+  }
 
-/* ============ Renderers ============ */
-const board = document.getElementById('board');
-if (!board) {
-  console.error('Board element not found');
-  alert('Error: Board element not found. Please check the HTML structure.');
-}
+  function saveAll() {
+    try {
+      localStorage.setItem('topicMap', JSON.stringify(parents));
+      console.log('Map saved to localStorage');
+    } catch (e) {
+      console.warn('Failed to save to localStorage:', e);
+    }
+  }
 
-function renderParent(model) {
-  try {
-    const wrap = document.createElement('section');
-    wrap.className = 'parent';
-    wrap.dataset.pid = model.id;
+  function renderParent(model) {
+    try {
+      const wrap = document.createElement('section');
+      wrap.className = 'parent';
+      wrap.dataset.pid = model.id;
 
-    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.style.position = 'absolute';
-    svg.style.top = '0';
-    svg.style.left = '0';
-    svg.style.width = '100%';
-    svg.style.height = '100%';
-    svg.style.pointerEvents = 'none';
-    svg.style.overflow = 'visible';
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.position = 'absolute';
+      svg.style.top = '0';
+      svg.style.left = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      svg.style.overflow = 'visible';
 
-    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-    const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-    grad.id = 'lineGrad' + model.id;
-    grad.setAttribute('x1', '0%');
-    grad.setAttribute('y1', '0%');
-    grad.setAttribute('x2', '0%');
-    grad.setAttribute('y2', '100%');
-    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-    stop1.setAttribute('offset', '0%');
-    stop1.setAttribute('stop-color', 'var(--accent)');
-    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-    stop2.setAttribute('offset', '100%');
-    stop2.setAttribute('stop-color', 'var(--accent2)');
-    grad.appendChild(stop1);
-    grad.appendChild(stop2);
-    defs.appendChild(grad);
-    svg.appendChild(defs);
+      const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      const grad = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+      grad.id = 'lineGrad' + model.id;
+      grad.setAttribute('x1', '0%');
+      grad.setAttribute('y1', '0%');
+      grad.setAttribute('x2', '0%');
+      grad.setAttribute('y2', '100%');
+      const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop1.setAttribute('offset', '0%');
+      stop1.setAttribute('stop-color', 'var(--accent)');
+      const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+      stop2.setAttribute('offset', '100%');
+      stop2.setAttribute('stop-color', 'var(--accent2)');
+      grad.appendChild(stop1);
+      grad.appendChild(stop2);
+      defs.appendChild(grad);
+      svg.appendChild(defs);
 
-    const head = document.createElement('div');
-    head.className = 'parent-head';
+      const head = document.createElement('div');
+      head.className = 'parent-head';
 
-    const pill = makeEditablePill(model.title, model.id);
-    if (!pill) throw new Error('Failed to create parent pill');
-    pill.addEventListener('input', () => { model.title = pill.textContent.trim() || 'parent topic'; saveAll(); });
-    pill.addEventListener('blur', () => { pill.textContent = model.title; drawLines(); });
-    head.appendChild(pill);
+      const pill = makeEditablePill(model.title, model.id);
+      pill.addEventListener('input', () => { model.title = pill.textContent.trim() || 'parent topic'; saveAll(); });
+      pill.addEventListener('blur', () => { pill.textContent = model.title; drawLines(); });
+      head.appendChild(pill);
 
-    const addSub = document.createElement('button');
-    addSub.className = 'act';
-    addSub.title = 'Add sub-topic to the last row';
-    addSub.textContent = '+';
-    addSub.addEventListener('click', () => {
-      try {
-        if (model.rows.length === 0) model.rows.push([]);
-        const rowIndex = model.rows.length - 1;
-        const newSub = newSubModel();
-        model.rows[rowIndex].push(newSub);
-        renderSubs(newSub.id);
-        saveAll();
-      } catch (e) {
-        console.error('Failed to add sub-topic:', e);
-        alert('Error adding sub-topic. Please check the console.');
-      }
-    });
-    head.appendChild(addSub);
-
-    const deleteParent = document.createElement('button');
-    deleteParent.className = 'act';
-    deleteParent.title = 'Delete this parent topic';
-    deleteParent.textContent = '×';
-    deleteParent.addEventListener('click', () => {
-      try {
-        if (confirm('Delete this parent topic and all its sub-topics?')) {
-          const index = parents.findIndex(p => p.id === model.id);
-          if (index > -1) parents.splice(index, 1);
-          board.removeChild(wrap);
+      const addSub = document.createElement('button');
+      addSub.className = 'act';
+      addSub.title = 'Add sub-topic';
+      addSub.textContent = '+';
+      addSub.addEventListener('click', () => {
+        try {
+          const newSub = newSubModel();
+          model.subs.push(newSub);
+          renderSubs(newSub.id);
           saveAll();
+        } catch (e) {
+          console.error('Failed to add sub-topic:', e);
+          alert('Error adding sub-topic.');
         }
-      } catch (e) {
-        console.error('Failed to delete parent:', e);
-        alert('Error deleting parent. Please check the console.');
-      }
-    });
-    head.appendChild(deleteParent);
+      });
+      head.appendChild(addSub);
 
-    const subs = document.createElement('div');
-    subs.className = 'subs';
+      const deleteParent = document.createElement('button');
+      deleteParent.className = 'act';
+      deleteParent.title = 'Delete this parent topic';
+      deleteParent.textContent = '×';
+      deleteParent.addEventListener('click', () => {
+        try {
+          if (confirm('Delete this parent topic and all its sub-topics?')) {
+            const index = parents.findIndex(p => p.id === model.id);
+            if (index > -1) parents.splice(index, 1);
+            board.removeChild(wrap);
+            saveAll();
+          }
+        } catch (e) {
+          console.error('Failed to delete parent:', e);
+          alert('Error deleting parent.');
+        }
+      });
+      head.appendChild(deleteParent);
 
-    function renderSubs(newId = null) {
-      try {
-        subs.innerHTML = '';
-        svg.innerHTML = '';
-        svg.appendChild(defs);
-        model.rows = model.rows.filter(row => row.length > 0);
-        model.rows.forEach((row, rIndex) => {
+      const subs = document.createElement('div');
+      subs.className = 'subs';
+
+      function renderSubs(newId = null) {
+        try {
+          subs.innerHTML = '';
+          svg.innerHTML = '';
+          svg.appendChild(defs);
           const rowEl = document.createElement('div');
           rowEl.className = 'subs-row';
-          row.forEach((sub, cIndex) => {
+          model.subs.forEach((sub, index) => {
             const chip = document.createElement('div');
             chip.className = 'chip';
             if (newId === sub.id) chip.classList.add('new-item');
 
-            const sp = makeEditablePill(sub.title, sub.id, true);
-            if (!sp) throw new Error('Failed to create sub-topic pill');
+            const sp = makeEditablePill(sub.title, sub.id, 'small');
             sp.addEventListener('input', () => { sub.title = sp.textContent.trim() || 'sub-topic'; saveAll(); });
             sp.addEventListener('blur', () => { sp.textContent = sub.title; drawLines(); });
             chip.appendChild(sp);
@@ -305,26 +273,12 @@ function renderParent(model) {
             left.addEventListener('click', () => {
               try {
                 const newSub = newSubModel();
-                row.splice(cIndex, 0, newSub);
+                model.subs.splice(index, 0, newSub);
                 renderSubs(newSub.id);
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic left:', e);
-                alert('Error adding sub-topic. Please check the console.');
-              }
-            });
-
-            const up = document.createElement('button');
-            up.className = 'mini'; up.title = 'Add sub-topic on a new row above'; up.textContent = '↑';
-            up.addEventListener('click', () => {
-              try {
-                const newRow = [newSubModel()];
-                model.rows.splice(rIndex, 0, newRow);
-                renderSubs(newRow[0].id);
-                saveAll();
-              } catch (e) {
-                console.error('Failed to add sub-topic above:', e);
-                alert('Error adding sub-topic. Please check the console.');
+                alert('Error adding sub-topic.');
               }
             });
 
@@ -333,26 +287,26 @@ function renderParent(model) {
             right.addEventListener('click', () => {
               try {
                 const newSub = newSubModel();
-                row.splice(cIndex + 1, 0, newSub);
+                model.subs.splice(index + 1, 0, newSub);
                 renderSubs(newSub.id);
                 saveAll();
               } catch (e) {
                 console.error('Failed to add sub-topic right:', e);
-                alert('Error adding sub-topic. Please check the console.');
+                alert('Error adding sub-topic.');
               }
             });
 
-            const down = document.createElement('button');
-            down.className = 'mini'; down.title = 'Add sub-topic on a new row below'; down.textContent = '⬇';
-            down.addEventListener('click', () => {
+            const addSubSub = document.createElement('button');
+            addSubSub.className = 'mini'; addSubSub.title = 'Add sub-sub-topic'; addSubSub.textContent = '+';
+            addSubSub.addEventListener('click', () => {
               try {
-                const newRow = [newSubModel()];
-                model.rows.splice(rIndex + 1, 0, newRow);
-                renderSubs(newRow[0].id);
+                const newSubSub = newSubSubModel();
+                sub.subsubs.push(newSubSub);
+                renderSubs(newSubSub.id);
                 saveAll();
               } catch (e) {
-                console.error('Failed to add sub-topic below:', e);
-                alert('Error adding sub-topic. Please check the console.');
+                console.error('Failed to add sub-sub-topic:', e);
+                alert('Error adding sub-sub-topic.');
               }
             });
 
@@ -360,181 +314,234 @@ function renderParent(model) {
             del.className = 'mini'; del.title = 'Delete this sub-topic'; del.textContent = '×';
             del.addEventListener('click', () => {
               try {
-                if (confirm('Delete this sub-topic?')) {
-                  row.splice(cIndex, 1);
+                if (confirm('Delete this sub-topic and its sub-sub-topics?')) {
+                  model.subs.splice(index, 1);
                   renderSubs();
                   saveAll();
                 }
               } catch (e) {
                 console.error('Failed to delete sub-topic:', e);
-                alert('Error deleting sub-topic. Please check the console.');
+                alert('Error deleting sub-topic.');
               }
             });
 
-            actions.append(left, up, right, down, del);
+            actions.append(left, right, addSubSub, del);
             chip.appendChild(actions);
+
+            const subsubs = document.createElement('div');
+            subsubs.className = 'subsubs-row';
+            sub.subsubs.forEach((subsub, ssIndex) => {
+              const subsubChip = document.createElement('div');
+              subsubChip.className = 'chip';
+              if (newId === subsub.id) subsubChip.classList.add('new-item');
+
+              const ssp = makeEditablePill(subsub.title, subsub.id, 'tiny');
+              ssp.addEventListener('input', () => { subsub.title = ssp.textContent.trim() || 'sub-sub-topic'; saveAll(); });
+              ssp.addEventListener('blur', () => { ssp.textContent = subsub.title; drawLines(); });
+              subsubChip.appendChild(ssp);
+
+              const subsubActions = document.createElement('div');
+              subsubActions.className = 'actions';
+
+              const ssLeft = document.createElement('button');
+              ssLeft.className = 'mini'; ssLeft.title = 'Add sub-sub-topic to the left'; ssLeft.textContent = '←';
+              ssLeft.addEventListener('click', () => {
+                try {
+                  const newSubSub = newSubSubModel();
+                  sub.subsubs.splice(ssIndex, 0, newSubSub);
+                  renderSubs(newSubSub.id);
+                  saveAll();
+                } catch (e) {
+                  console.error('Failed to add sub-sub-topic left:', e);
+                  alert('Error adding sub-sub-topic.');
+                }
+              });
+
+              const ssRight = document.createElement('button');
+              ssRight.className = 'mini'; ssRight.title = 'Add sub-sub-topic to the right'; ssRight.textContent = '→';
+              ssRight.addEventListener('click', () => {
+                try {
+                  const newSubSub = newSubSubModel();
+                  sub.subsubs.splice(ssIndex + 1, 0, newSubSub);
+                  renderSubs(newSubSub.id);
+                  saveAll();
+                } catch (e) {
+                  console.error('Failed to add sub-sub-topic right:', e);
+                  alert('Error adding sub-sub-topic.');
+                }
+              });
+
+              const ssDel = document.createElement('button');
+              ssDel.className = 'mini'; ssDel.title = 'Delete this sub-sub-topic'; ssDel.textContent = '×';
+              ssDel.addEventListener('click', () => {
+                try {
+                  if (confirm('Delete this sub-sub-topic?')) {
+                    sub.subsubs.splice(ssIndex, 1);
+                    renderSubs();
+                    saveAll();
+                  }
+                } catch (e) {
+                  console.error('Failed to delete sub-sub-topic:', e);
+                  alert('Error deleting sub-sub-topic.');
+                }
+              });
+
+              subsubActions.append(ssLeft, ssRight, ssDel);
+              subsubChip.appendChild(subsubActions);
+              subsubs.appendChild(subsubChip);
+            });
+            chip.appendChild(subsubs);
             rowEl.appendChild(chip);
           });
           subs.appendChild(rowEl);
-        });
-        drawLines();
-        if (newId) {
-          const newPill = subs.querySelector(`.btn.small[data-id="${newId}"]`);
-          if (newPill) newPill.focus();
+          drawLines();
+          if (newId) {
+            const newPill = subs.querySelector(`.btn[data-id="${newId}"]`);
+            if (newPill) newPill.focus();
+          }
+        } catch (e) {
+          console.error('Failed to render subs:', e);
+          alert('Error rendering sub-topics.');
         }
-      } catch (e) {
-        console.error('Failed to render subs:', e);
-        alert('Error rendering sub-topics. Please check the console.');
       }
-    }
 
-    function drawLines() {
-      try {
-        const wrapRect = wrap.getBoundingClientRect();
-        const parentRect = pill.getBoundingClientRect();
-        const parentCenterX = parentRect.left - wrapRect.left + parentRect.width / 2;
-        const parentBottomY = parentRect.bottom - wrapRect.top + 8;
+      function drawLines() {
+        try {
+          const wrapRect = wrap.getBoundingClientRect();
+          const parentRect = pill.getBoundingClientRect();
+          const parentCenterX = parentRect.left - wrapRect.left + parentRect.width / 2;
+          const parentBottomY = parentRect.bottom - wrapRect.top + 8;
 
-        const subPills = subs.querySelectorAll('.btn.small');
-        subPills.forEach(sp => {
-          const spRect = sp.getBoundingClientRect();
-          const spCenterX = spRect.left - wrapRect.left + spRect.width / 2;
-          const spTopY = spRect.top - wrapRect.top - 8;
-          const midY = (parentBottomY + spTopY) / 2;
+          const subPills = subs.querySelectorAll('.btn.small');
+          subPills.forEach(sp => {
+            const spRect = sp.getBoundingClientRect();
+            const spCenterX = spRect.left - wrapRect.left + spRect.width / 2;
+            const spTopY = spRect.top - wrapRect.top - 8;
+            const midY = (parentBottomY + spTopY) / 2;
 
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', `M${parentCenterX} ${parentBottomY} C ${parentCenterX} ${midY}, ${spCenterX} ${midY}, ${spCenterX} ${spTopY}`);
-          path.setAttribute('stroke', `url(#lineGrad${model.id})`);
-          path.setAttribute('stroke-width', '2');
-          path.setAttribute('stroke-opacity', '0.5');
-          path.setAttribute('stroke-linecap', 'round');
-          path.setAttribute('fill', 'none');
-          svg.appendChild(path);
-        });
-      } catch (e) {
-        console.error('Failed to draw lines:', e);
-        alert('Error drawing hierarchy lines. Please check the console.');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M${parentCenterX} ${parentBottomY} C ${parentCenterX} ${midY}, ${spCenterX} ${midY}, ${spCenterX} ${spTopY}`);
+            path.setAttribute('stroke', `url(#lineGrad${model.id})`);
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('stroke-opacity', '0.5');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('fill', 'none');
+            svg.appendChild(path);
+
+            const subsubPills = sp.parentElement.querySelectorAll('.btn.tiny');
+            subsubPills.forEach(ssp => {
+              const sspRect = ssp.getBoundingClientRect();
+              const sspCenterX = sspRect.left - wrapRect.left + sspRect.width / 2;
+              const sspTopY = sspRect.top - wrapRect.top - 8;
+              const subBottomY = spRect.bottom - wrapRect.top + 8;
+              const subMidY = (subBottomY + sspTopY) / 2;
+
+              const subPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              subPath.setAttribute('d', `M${spCenterX} ${subBottomY} C ${spCenterX} ${subMidY}, ${sspCenterX} ${subMidY}, ${sspCenterX} ${sspTopY}`);
+              subPath.setAttribute('stroke', `url(#lineGrad${model.id})`);
+              subPath.setAttribute('stroke-width', '1.5');
+              subPath.setAttribute('stroke-opacity', '0.4');
+              subPath.setAttribute('stroke-linecap', 'round');
+              subPath.setAttribute('fill', 'none');
+              svg.appendChild(subPath);
+            });
+          });
+        } catch (e) {
+          console.error('Failed to draw lines:', e);
+        }
       }
-    }
 
-    renderSubs();
-
-    const resizeObserver = new ResizeObserver(debounce(() => {
       renderSubs();
-    }));
-    resizeObserver.observe(wrap);
-
-    wrap.append(svg, head, subs);
-    return wrap;
-  } catch (e) {
-    console.error('Failed to render parent:', e);
-    alert('Error rendering parent topic. Please check the console.');
-    return null;
+      wrap.append(svg, head, subs);
+      return wrap;
+    } catch (e) {
+      console.error('Failed to render parent:', e);
+      return null;
+    }
   }
-}
 
-function addParent(focus = true) {
-  try {
-    console.log('Attempting to add parent topic');
-    if (!board) throw new Error('Board element is missing');
-    const model = newParentModel();
-    parents.push(model);
-    const node = renderParent(model);
-    if (!node) throw new Error('Failed to render parent node');
-    board.appendChild(node);
-    saveAll();
-    if (focus) {
-      const pill = node.querySelector('.btn');
-      if (pill) {
-        pill.focus();
-        console.log('Focused new parent pill:', model.id);
-      } else {
-        console.warn('No pill found to focus');
+  function addParent(focus = true) {
+    try {
+      console.log('Add parent button clicked');
+      if (!board) throw new Error('Board element is missing');
+      const model = newParentModel();
+      parents.push(model);
+      const node = renderParent(model);
+      if (!node) throw new Error('Failed to render parent node');
+      board.appendChild(node);
+      saveAll();
+      if (focus) {
+        const pill = node.querySelector('.btn');
+        if (pill) pill.focus();
       }
+      console.log('Parent added:', model.id);
+    } catch (e) {
+      console.error('Failed to add parent:', e);
+      alert('Error adding parent topic. Check the console (F12).');
     }
-    console.log('Parent added successfully:', model.id);
-  } catch (e) {
-    console.error('Failed to add parent:', e);
-    alert('Error adding parent topic. Please check the console (F12) for details.');
   }
-}
 
-/* ============ Export ============ */
-function exportJSON() {
-  try {
-    const data = parents.map(model => ({
-      title: model.title,
-      rows: model.rows.map(row => row.map(sub => sub.title))
-    }));
-    const json = JSON.stringify({map: data, exported: new Date().toISOString()}, null, 2);
-    navigator.clipboard.writeText(json).then(() => {
-      alert('JSON copied to clipboard!');
-      console.log('JSON exported successfully');
-    }).catch(err => {
-      console.error('Failed to copy JSON:', err);
-      alert('Failed to copy JSON. Please check the console.');
-    });
-  } catch (e) {
-    console.error('Failed to export JSON:', e);
-    alert('Error exporting JSON. Please check the console.');
-  }
-}
-
-/* ============ Clear ============ */
-function clearMap() {
-  try {
-    if (confirm('Clear the entire map? This cannot be undone.')) {
-      board.innerHTML = '';
-      parents = [];
-      localStorage.removeItem('topicMap');
-      parentId = 0;
-      addParent(false);
-      console.log('Map cleared successfully');
-    }
-  } catch (e) {
-    console.error('Failed to clear map:', e);
-    alert('Error clearing map. Please check the console.');
-  }
-}
-
-/* ============ Load from storage ============ */
-function loadFromStorage() {
-  try {
-    const saved = localStorage.getItem('topicMap');
-    if (saved) {
-      const loadedParents = JSON.parse(saved);
-      if (!Array.isArray(loadedParents)) throw new Error('Invalid localStorage data');
-      loadedParents.forEach(model => {
-        parentId = Math.max(parentId, parseInt(model.id.slice(1)) || 0);
-        parents.push(model);
-        const node = renderParent(model);
-        if (node) board.appendChild(node);
+  function exportJSON() {
+    try {
+      const data = parents.map(model => ({
+        title: model.title,
+        subs: model.subs.map(sub => ({
+          title: sub.title,
+          subsubs: sub.subsubs.map(ss => ss.title)
+        }))
+      }));
+      navigator.clipboard.writeText(JSON.stringify({map: data, exported: new Date().toISOString()}, null, 2)).then(() => {
+        alert('JSON copied to clipboard!');
       });
-      console.log('Loaded map from localStorage:', parents.length, 'parents');
+    } catch (e) {
+      console.error('Failed to export JSON:', e);
+      alert('Error exporting JSON.');
     }
-    if (parents.length === 0) addParent(false);
-  } catch (e) {
-    console.error('Failed to load map:', e);
-    alert('Error loading saved map. Starting fresh. Please check the console.');
-    addParent(false);
   }
-}
 
-/* ============ Wire up ============ */
-try {
-  const addParentBtn = document.getElementById('addParent');
-  if (!addParentBtn) throw new Error('Add parent button not found');
-  addParentBtn.addEventListener('click', () => {
-    console.log('Add parent button clicked');
-    addParent();
-  });
+  function clearMap() {
+    try {
+      if (confirm('Clear the entire map? This cannot be undone.')) {
+        board.innerHTML = '';
+        parents = [];
+        localStorage.removeItem('topicMap');
+        parentId = 0;
+        addParent(false);
+      }
+    } catch (e) {
+      console.error('Failed to clear map:', e);
+      alert('Error clearing map.');
+    }
+  }
+
+  function loadFromStorage() {
+    try {
+      const saved = localStorage.getItem('topicMap');
+      if (saved) {
+        const loadedParents = JSON.parse(saved);
+        if (!Array.isArray(loadedParents)) throw new Error('Invalid localStorage data');
+        parents = loadedParents;
+        parentId = Math.max(...loadedParents.map(p => parseInt(p.id.slice(1)) || 0), 0);
+        parents.forEach(model => {
+          const node = renderParent(model);
+          if (node) board.appendChild(node);
+        });
+      }
+      if (parents.length === 0) addParent(false);
+    } catch (e) {
+      console.warn('Failed to load map:', e);
+      addParent(false);
+    }
+  }
+
+  addParentBtn.addEventListener('click', addParent);
   document.getElementById('exportBtn').addEventListener('click', exportJSON);
   document.getElementById('clearBtn').addEventListener('click', clearMap);
   loadFromStorage();
-  console.log('Application initialized successfully');
+  console.log('App initialized');
 } catch (e) {
-  console.error('Failed to initialize event listeners:', e);
-  alert('Error initializing the app. Please check the console (F12) for details.');
+  console.error('Initialization failed:', e);
+  alert('Error initializing app. Check the console (F12).');
 }
 </script>
 </body>
