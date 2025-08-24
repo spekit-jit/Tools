@@ -2,123 +2,71 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Topic Mapper — Responsive</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Topic Mapper — Balanced Layout</title>
 <style>
   :root{
-    /* Global theme (tweak freely or brand to Spekit) */
-    --bg: #fafafa;
-    --panel: #ffffff;
-    --text: #111;
-    --muted: #666;
-    --accent: #6a5cff;   /* primary */
-    --accent-2: #ff7a59; /* secondary */
-    --node-fill: #fff;
-    --node-stroke: #e2e2e2;
-    --node-parent: #eef0ff;
-    --node-child: #fff9ef;
-    --edge: #c7c7d0;
-    --edge-active: var(--accent);
-    --shadow: 0 4px 14px rgba(0,0,0,.08);
-    --radius: 14px;
-    --pad: 14px;
-    --font: -apple-system, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --bg:#fafafa; --panel:#fff; --text:#111; --muted:#666;
+    --accent:#6a5cff; --accent-2:#ff7a59;
+    --node-fill:#fff; --node-stroke:#e2e2e2;
+    --node-parent:#eef0ff; --node-child:#fff9ef;
+    --edge:#c7c7d0; --edge-active:var(--accent);
+    --shadow:0 4px 14px rgba(0,0,0,.08);
+    --radius:14px; --pad:14px;
+    --font:-apple-system,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --bg: #0f1115;
-      --panel: #141821;
-      --text: #f2f4f8;
-      --muted: #9aa3b2;
-      --accent: #8f88ff;
-      --accent-2: #ffa37f;
-      --node-fill: #1a2030;
-      --node-stroke: #283047;
-      --node-parent: #1d2440;
-      --node-child: #221e18;
-      --edge: #34405f;
-      --edge-active: #a7a2ff;
-      --shadow: 0 6px 16px rgba(0,0,0,.35);
+      --bg:#0f1115; --panel:#141821; --text:#f2f4f8; --muted:#9aa3b2;
+      --accent:#8f88ff; --accent-2:#ffa37f;
+      --node-fill:#1a2030; --node-stroke:#283047;
+      --node-parent:#1d2440; --node-child:#221e18;
+      --edge:#34405f; --edge-active:#a7a2ff;
+      --shadow:0 6px 16px rgba(0,0,0,.35);
     }
   }
-
-  html, body { height: 100%; }
-  body{
-    margin:0; background:var(--bg); color:var(--text); font-family:var(--font);
-    display:flex; flex-direction:column; min-height:100%;
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);display:flex;flex-direction:column;min-height:100%}
+  .toolbar{position:sticky;top:0;z-index:10;background:var(--panel);box-shadow:var(--shadow);display:flex;gap:8px;align-items:center;padding:10px 12px;flex-wrap:wrap}
+  .toolbar .title{font-weight:600;margin-right:auto;letter-spacing:.2px}
+  button,label.btn{
+    appearance:none;border:1px solid var(--node-stroke);background:var(--panel);color:var(--text);
+    border-radius:10px;padding:8px 12px;cursor:pointer;font:inherit
   }
-
-  .toolbar{
-    position:sticky; top:0; z-index:10; background:var(--panel); box-shadow:var(--shadow);
-    display:flex; gap:8px; align-items:center; padding:10px 12px; flex-wrap:wrap;
-  }
-  .toolbar .title{ font-weight:600; margin-right:auto; letter-spacing:.2px; }
-  button, label.btn{
-    appearance:none; border:1px solid var(--node-stroke); background:var(--panel); color:var(--text);
-    border-radius:10px; padding:8px 12px; cursor:pointer; font:inherit;
-  }
-  button.primary{ background:var(--accent); color:white; border-color:transparent; }
-  button:hover{ filter:brightness(1.03); }
-  button:disabled{ opacity:.5; cursor:not-allowed; }
-  input[type="file"]{ display:none; }
-
-  .stage-wrap{
-    position:relative; flex:1 1 auto; min-height:0; /* allow SVG to fill */
-  }
-  svg#stage{
-    width:100%; height:100%; display:block; touch-action:none; background:
-      radial-gradient(transparent 3px, transparent 3px) 0 0/40px 40px,
-      radial-gradient(transparent 3px, transparent 3px) 20px 20px/40px 40px,
-      linear-gradient(to bottom, transparent, transparent);
-  }
-
-  /* Node visuals (SVG elements) */
-  .node > rect{
-    fill:var(--node-fill);
-    stroke:var(--node-stroke);
-    stroke-width:1.5;
-    rx:12; ry:12;
-    filter:drop-shadow(0 3px 6px rgba(0,0,0,.08));
-  }
-  .node.parent > rect{ fill:var(--node-parent); }
-  .node.child  > rect{ fill:var(--node-child); }
-  .node.selected > rect{ stroke:var(--accent); stroke-width:2; }
-
-  .edge{ stroke:var(--edge); stroke-width:2; }
-  .edge.active{ stroke:var(--edge-active); stroke-dasharray:4 4; }
-
-  .label{
-    font-size:14px; fill:var(--text);
-    user-select:none; pointer-events:none;
-  }
-
-  /* Inline editor overlay (HTML on top of SVG) */
-  .editor{
-    position:absolute; z-index:20; background:var(--panel); color:var(--text);
-    border:1px solid var(--node-stroke); border-radius:10px; padding:8px 10px; min-width:160px;
-    box-shadow:var(--shadow); outline:none;
-  }
-
-  .hint{
-    position:absolute; right:10px; bottom:10px; opacity:.75; font-size:12px; color:var(--muted);
-    background:var(--panel); padding:6px 8px; border-radius:8px; border:1px solid var(--node-stroke);
-  }
-
-  /* Utility */
-  .spacer{ flex:1; }
+  button.primary{background:var(--accent);color:#fff;border-color:transparent}
+  button:hover{filter:brightness(1.03)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input[type=file]{display:none}
+  .stage-wrap{position:relative;flex:1 1 auto;min-height:0}
+  svg#stage{width:100%;height:100%;display:block;touch-action:none;background:
+    radial-gradient(transparent 3px, transparent 3px) 0 0/40px 40px,
+    radial-gradient(transparent 3px, transparent 3px) 20px 20px/40px 40px}
+  .node>rect{fill:var(--node-fill);stroke:var(--node-stroke);stroke-width:1.5;rx:12;ry:12;filter:drop-shadow(0 3px 6px rgba(0,0,0,.08))}
+  .node.parent>rect{fill:var(--node-parent)}
+  .node.child>rect{fill:var(--node-child)}
+  .node.selected>rect{stroke:var(--accent);stroke-width:2}
+  .edge{stroke:var(--edge);stroke-width:2;fill:none}
+  .edge.active{stroke:var(--edge-active);stroke-dasharray:4 4}
+  .label{font-size:14px;fill:var(--text);user-select:none;pointer-events:none}
+  .editor{position:absolute;z-index:20;background:var(--panel);color:var(--text);border:1px solid var(--node-stroke);
+    border-radius:10px;padding:8px 10px;min-width:160px;box-shadow:var(--shadow);outline:none}
+  .hint{position:absolute;right:10px;bottom:10px;opacity:.75;font-size:12px;color:var(--muted);background:var(--panel);
+    padding:6px 8px;border-radius:8px;border:1px solid var(--node-stroke)}
+  .spacer{flex:1}
 </style>
 </head>
 <body>
   <div class="toolbar">
     <div class="title">Topic Mapper</div>
-    <button id="addParent" class="primary">Add Topic</button>
-    <button id="addChild" disabled>Add Subtopic</button>
-    <button id="connect" disabled>Connect</button>
+    <button id="addParent" class="primary">＋ Topic</button>
+    <button id="addChild" disabled>＋ Subtopic</button>
+    <button id="connect" disabled>⟷ Connect</button>
+    <button id="autoLayout" class="">Auto Layout: On</button>
     <button id="zoomFit">Zoom to Fit</button>
     <button id="reset">Reset</button>
     <div class="spacer"></div>
     <button id="exportBtn">Export</button>
-    <label class="btn" for="importFile">Import</label>
+    <label for="importFile" class="btn">Import</label>
     <input id="importFile" type="file" accept="application/json" />
   </div>
 
@@ -127,14 +75,11 @@
       <g id="edges"></g>
       <g id="nodes"></g>
     </svg>
-    <div class="hint">Tip: Double-click a node to rename. Drag to move. Tap empty space to clear selection.</div>
+    <div class="hint">Tip: Double-click a node to rename. Auto Layout keeps things centered. Toggle it off to drag manually.</div>
   </div>
 
 <script>
 (() => {
-  /* ===============================
-     Minimal graph state + helpers
-  =================================*/
   const stage = document.getElementById('stage');
   const gNodes = document.getElementById('nodes');
   const gEdges = document.getElementById('edges');
@@ -146,47 +91,44 @@
   const btnReset     = document.getElementById('reset');
   const btnExport    = document.getElementById('exportBtn');
   const fileImport   = document.getElementById('importFile');
+  const btnAutoLayout= document.getElementById('autoLayout');
 
   const PADDING_X = 14, PADDING_Y = 10, MIN_W = 120, MIN_H = 40;
+  const LEVEL_GAP_Y = 120;          // vertical spacing between levels
+  const SIBLING_GAP_X = 40;         // minimal horizontal gap between siblings
+  const SUBTREE_PAD_X = 20;         // extra padding around subtree width
 
   let nodes = [];   // {id,x,y,w,h,text,type,parentId?}
-  let edges = [];   // {id, a, b}
+  let edges = [];   // {id,a,b}
   let selectedId = null;
   let isConnecting = false;
   let connectAnchor = null;
+  let autoLayout = true;
 
   const id = () => Math.random().toString(36).slice(2,9);
-
   const findNode = nid => nodes.find(n => n.id === nid);
-  const edgeEl = eid => document.getElementById('edge-'+eid);
   const nodeEl = nid => document.getElementById('node-'+nid);
+  const edgeEl = eid => document.getElementById('edge-'+eid);
 
-  /* ===============================
-     SVG <g class="node"> builder
-  =================================*/
   function buildNode(n){
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
     g.classList.add('node', n.type);
     g.setAttribute('id','node-'+n.id);
-    g.setAttribute('transform', `translate(${n.x},${n.y})`);
+    g.setAttribute('transform',`translate(${n.x},${n.y})`);
     g.setAttribute('data-id', n.id);
 
     const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
-    rect.setAttribute('width', n.w);
-    rect.setAttribute('height', n.h);
+    rect.setAttribute('width', n.w); rect.setAttribute('height', n.h);
 
     const text = document.createElementNS('http://www.w3.org/2000/svg','text');
     text.classList.add('label');
-    text.setAttribute('x', n.w/2);
-    text.setAttribute('y', n.h/2);
-    text.setAttribute('dominant-baseline', 'middle');
-    text.setAttribute('text-anchor', 'middle');
+    text.setAttribute('x', n.w/2); text.setAttribute('y', n.h/2);
+    text.setAttribute('dominant-baseline','middle');
+    text.setAttribute('text-anchor','middle');
     text.textContent = n.text;
 
-    g.appendChild(rect);
-    g.appendChild(text);
+    g.appendChild(rect); g.appendChild(text);
     attachNodeEvents(g);
-
     return g;
   }
 
@@ -194,16 +136,13 @@
     const existing = nodeEl(n.id);
     const g = existing || buildNode(n);
     if(!existing) gNodes.appendChild(g);
-    // Update geometry
     g.setAttribute('transform',`translate(${n.x},${n.y})`);
     const rect = g.querySelector('rect');
-    rect.setAttribute('width', n.w);
-    rect.setAttribute('height', n.h);
+    rect.setAttribute('width', n.w); rect.setAttribute('height', n.h);
     const label = g.querySelector('text');
-    label.setAttribute('x', n.w/2);
-    label.setAttribute('y', n.h/2);
+    label.setAttribute('x', n.w/2); label.setAttribute('y', n.h/2);
     label.textContent = n.text;
-    g.classList.toggle('selected', selectedId === n.id);
+    g.classList.toggle('selected', selectedId===n.id);
   }
 
   function drawEdge(e){
@@ -216,11 +155,13 @@
     }
     const a = findNode(e.a), b = findNode(e.b);
     if(!a || !b) return;
-    const ax = a.x + a.w/2, ay = a.y + a.h/2;
-    const bx = b.x + b.w/2, by = b.y + b.h/2;
-    // Smooth-ish curved line
-    const dx = (bx-ax)/2;
-    const d = `M ${ax} ${ay} C ${ax+dx} ${ay}, ${bx-dx} ${by}, ${bx} ${by}`;
+    const ax = a.x + a.w/2, ay = a.y + a.h;
+    const bx = b.x + b.w/2, by = b.y; // connect bottom of parent to top of child when hierarchical
+
+    // If hierarchical (b.parentId === a.id or a.parentId === b.id) use vertical-ish curve
+    let y1 = ay, y2 = by;
+    let dx = (bx-ax)*0.3, dy = (by-ay)*0.6;
+    const d = `M ${ax} ${y1} C ${ax+dx} ${y1+dy}, ${bx-dx} ${y2-dy}, ${bx} ${y2}`;
     path.setAttribute('d', d);
   }
 
@@ -232,11 +173,7 @@
     updateButtons();
   }
 
-  /* ===============================
-     Autosize label => node box
-  =================================*/
   function autosizeNode(n){
-    // Temporarily render the label to measure
     let ghost = document.getElementById('ghost-measure');
     if(!ghost){
       ghost = document.createElementNS('http://www.w3.org/2000/svg','text');
@@ -251,9 +188,6 @@
     n.h = Math.max(MIN_H, Math.ceil(bb.height + PADDING_Y*2));
   }
 
-  /* ===============================
-     ViewBox auto-fit to content
-  =================================*/
   function fitViewBoxToContent(pad=80){
     if(nodes.length===0){
       stage.setAttribute('viewBox', `0 0 ${window.innerWidth} ${window.innerHeight-64}`);
@@ -272,28 +206,15 @@
     stage.setAttribute('viewBox', `${minX} ${minY} ${vbW} ${vbH}`);
   }
 
-  /* ===============================
-     Selection + editor
-  =================================*/
-  function select(nid){
-    selectedId = nid;
-    updateButtons();
-    redraw();
-  }
-  function clearSelection(){
-    selectedId = null;
-    isConnecting = false;
-    connectAnchor = null;
-    updateButtons();
-    redraw();
-  }
+  function select(nid){ selectedId = nid; updateButtons(); redraw(); }
+  function clearSelection(){ selectedId=null; isConnecting=false; connectAnchor=null; updateButtons(); redraw(); }
   function updateButtons(){
     const hasSel = !!selectedId;
     btnAddChild.disabled = !hasSel;
-    btnConnect.disabled = !hasSel;
+    btnConnect.disabled  = !hasSel;
+    btnAutoLayout.textContent = `Auto Layout: ${autoLayout ? 'On' : 'Off'}`;
   }
 
-  // Inline editor (HTML overlay) placed above node center
   function editNode(n){
     const wrap = document.querySelector('.stage-wrap');
     const editor = document.createElement('textarea');
@@ -301,7 +222,6 @@
     editor.value = n.text;
     wrap.appendChild(editor);
 
-    // Position editor using SVG -> screen coords
     const pt = stage.createSVGPoint();
     pt.x = n.x + n.w/2; pt.y = n.y + n.h/2;
     const ctm = stage.getScreenCTM();
@@ -313,89 +233,74 @@
     editor.style.width = approxW + 'px';
     editor.style.height = approxH + 'px';
 
-    editor.focus();
-    editor.setSelectionRange(0, editor.value.length);
+    editor.focus(); editor.setSelectionRange(0, editor.value.length);
 
     const commit = () => {
       n.text = editor.value.trim() || 'Topic';
       autosizeNode(n);
       wrap.removeChild(editor);
-      redraw();
+      if(autoLayout) layoutAndRedraw(); else redraw();
     };
-    const cancel = () => {
-      wrap.removeChild(editor);
-      redraw();
-    };
+    const cancel = () => { wrap.removeChild(editor); if(autoLayout) layoutAndRedraw(); else redraw(); };
 
     editor.addEventListener('keydown', (e)=>{
-      if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); commit(); }
-      if(e.key === 'Escape'){ e.preventDefault(); cancel(); }
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); commit(); }
+      if(e.key==='Escape'){ e.preventDefault(); cancel(); }
     });
     editor.addEventListener('blur', commit, {once:true});
   }
 
-  /* ===============================
-     Node interactivity (drag, dblclick)
-  =================================*/
   function attachNodeEvents(g){
     let dragging = false;
     let start = {x:0,y:0}; let orig = {x:0,y:0};
     const nid = g.getAttribute('data-id');
 
     g.addEventListener('pointerdown', (e)=>{
+      if(autoLayout) { select(nid); return; } // no dragging in auto mode
       e.preventDefault();
       g.setPointerCapture(e.pointerId);
       dragging = true;
       const n = findNode(nid);
       select(nid);
-      start = {x: e.clientX, y: e.clientY};
-      orig  = {x: n.x, y: n.y};
+      start = {x:e.clientX,y:e.clientY};
+      orig  = {x:n.x,y:n.y};
     });
 
     g.addEventListener('pointermove', (e)=>{
       if(!dragging) return;
       const dx = e.clientX - start.x;
       const dy = e.clientY - start.y;
-
-      // Convert screen delta to SVG units
       const inv = stage.getScreenCTM().inverse();
-      const p0 = stage.createSVGPoint(); p0.x = 0; p0.y = 0;
-      const p1 = stage.createSVGPoint(); p1.x = dx; p1.y = dy;
+      const p0 = stage.createSVGPoint(); p0.x=0; p0.y=0;
+      const p1 = stage.createSVGPoint(); p1.x=dx; p1.y=dy;
       const s0 = p0.matrixTransform(inv);
       const s1 = p1.matrixTransform(inv);
       const sdx = s1.x - s0.x, sdy = s1.y - s0.y;
 
       const n = findNode(nid);
-      n.x = orig.x + sdx;
-      n.y = orig.y + sdy;
+      n.x = orig.x + sdx; n.y = orig.y + sdy;
       drawNode(n);
       edges.forEach(e => (e.a===nid || e.b===nid) && drawEdge(e));
-      fitViewBoxToContent(); // keep everything visible while dragging
+      fitViewBoxToContent();
     });
 
     const endDrag = (e)=>{
       if(!dragging) return;
-      dragging = false;
-      g.releasePointerCapture(e.pointerId);
-      persist(); // save position
+      dragging=false; g.releasePointerCapture(e.pointerId);
+      persist();
     };
     g.addEventListener('pointerup', endDrag);
     g.addEventListener('pointercancel', endDrag);
 
-    g.addEventListener('dblclick', (e)=>{
-      e.preventDefault();
-      const n = findNode(nid);
-      editNode(n);
-    });
+    g.addEventListener('dblclick', (e)=>{ e.preventDefault(); const n=findNode(nid); editNode(n); });
 
-    // Support connect mode: first click = anchor, second = make edge
     g.addEventListener('click', (e)=>{
       if(!isConnecting) return;
       const targetId = nid;
-      if(connectAnchor && connectAnchor !== targetId){
+      if(connectAnchor && connectAnchor!==targetId){
         addEdge(connectAnchor, targetId);
-        isConnecting = false; connectAnchor = null;
-        redraw();
+        isConnecting=false; connectAnchor=null;
+        if(autoLayout) layoutAndRedraw(); else redraw();
       } else {
         connectAnchor = targetId;
         highlightConnecting(true, targetId);
@@ -404,161 +309,207 @@
     });
   }
 
-  function highlightConnecting(active, targetId=null){
-    // Visual hint by toggling an "active" class on all edges
-    [...gEdges.children].forEach(p => p.classList.toggle('active', active));
-    // Also bump the selected node stroke to accent (already done by .selected)
-    if(targetId){
-      const g = nodeEl(targetId);
-      if(g) g.classList.add('selected');
-    }
-  }
+  function highlightConnecting(active){ [...gEdges.children].forEach(p=>p.classList.toggle('active',active)); }
 
-  /* ===============================
-     Graph ops
-  =================================*/
-  function addNode({text='Topic', x=0, y=0, type='parent', parentId=null}={}){
-    const n = { id: id(), text, x, y, w:MIN_W, h:MIN_H, type, parentId };
+  function addNode({text='Topic',x=0,y=0,type='parent',parentId=null}={}){
+    const n = {id:id(),text,x,y,w:MIN_W,h:MIN_H,type,parentId};
     autosizeNode(n);
     nodes.push(n);
     drawNode(n);
     select(n.id);
-    fitViewBoxToContent();
     persist();
     return n;
   }
 
   function addSubtopic(anchorId){
-    const anchor = findNode(anchorId);
-    if(!anchor) return;
-    const child = addNode({
-      text:'Subtopic',
-      x: anchor.x + anchor.w + 80,
-      y: anchor.y,
-      type:'child',
-      parentId: anchor.id
-    });
+    const anchor = findNode(anchorId); if(!anchor) return;
+    const child = addNode({text:'Subtopic',type:'child',parentId:anchor.id});
     addEdge(anchor.id, child.id);
     return child;
   }
 
   function addEdge(a,b){
-    // prevent duplicate/loop edges
     if(a===b) return;
-    if(edges.some(e => (e.a===a && e.b===b) || (e.a===b && e.b===a))) return;
-    const e = { id:id(), a, b };
-    edges.push(e);
-    drawEdge(e);
+    if(edges.some(e=> (e.a===a&&e.b===b)||(e.a===b&&e.b===a))) return;
+    edges.push({id:id(),a,b});
     persist();
   }
 
   function removeAll(){
-    nodes = []; edges = [];
-    gNodes.innerHTML = ''; gEdges.innerHTML = '';
+    nodes=[]; edges=[];
+    gNodes.innerHTML=''; gEdges.innerHTML='';
     clearSelection();
     redraw();
   }
 
-  /* ===============================
-     Storage + import/export
-  =================================*/
-  const LS_KEY = 'topic-mapper-v2';
-  function persist(){
-    try{
-      localStorage.setItem(LS_KEY, JSON.stringify({nodes, edges}));
-    }catch{}
-  }
+  const LS_KEY='topic-mapper-v3';
+  function persist(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({nodes,edges,autoLayout})); }catch{} }
   function restore(){
     try{
       const raw = localStorage.getItem(LS_KEY);
       if(!raw) return;
       const parsed = JSON.parse(raw);
-      if(parsed?.nodes && parsed?.edges){
-        nodes = parsed.nodes; edges = parsed.edges;
-      }
+      if(parsed?.nodes && parsed?.edges){ nodes=parsed.nodes; edges=parsed.edges; }
+      if(typeof parsed?.autoLayout==='boolean') autoLayout = parsed.autoLayout;
     }catch{}
   }
 
   function exportJSON(){
-    const blob = new Blob([JSON.stringify({nodes, edges}, null, 2)], {type:'application/json'});
+    const blob = new Blob([JSON.stringify({nodes,edges},null,2)],{type:'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'topic-map.json';
+    const a=document.createElement('a'); a.href=url; a.download='topic-map.json';
     document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   function importJSON(file){
-    const reader = new FileReader();
-    reader.onload = () => {
+    const reader=new FileReader();
+    reader.onload=()=>{
       try{
-        const data = JSON.parse(reader.result);
-        if(Array.isArray(data.nodes) && Array.isArray(data.edges)){
-          nodes = data.nodes; edges = data.edges;
+        const data=JSON.parse(reader.result);
+        if(Array.isArray(data.nodes)&&Array.isArray(data.edges)){
+          nodes=data.nodes; edges=data.edges;
           gNodes.innerHTML=''; gEdges.innerHTML='';
-          nodes.forEach(drawNode); edges.forEach(drawEdge);
-          clearSelection(); fitViewBoxToContent(); persist();
+          nodes.forEach(n=>autosizeNode(n));
+          if(autoLayout) layoutAndRedraw(); else { nodes.forEach(drawNode); edges.forEach(drawEdge); fitViewBoxToContent(); persist(); }
         }
-      }catch(e){ alert('Invalid JSON'); }
+      }catch{ alert('Invalid JSON'); }
     };
     reader.readAsText(file);
   }
 
-  /* ===============================
-     Stage events (background)
-  =================================*/
-  stage.addEventListener('click', (e)=>{
-    // click on empty space clears selection
-    if(e.target === stage) clearSelection();
-  });
+  // ---------- Balanced downward auto layout ----------
+  // We treat parentId relations as the hierarchy. Any node without a parentId becomes a root.
+  // Width assignment is based on subtree size (number of leaves), giving balanced spacing.
 
-  // Enable connect mode toggle
+  function buildHierarchy(){
+    const map = new Map(nodes.map(n=>[n.id,{...n, children:[] }]));
+    const hasParent = new Set();
+    for(const n of map.values()){
+      if(n.parentId && map.has(n.parentId)){
+        map.get(n.parentId).children.push(n);
+        hasParent.add(n.id);
+      }
+    }
+    const roots = [...map.values()].filter(n => !hasParent.has(n.id));
+    return {map, roots};
+  }
+
+  function measureSubtree(node){
+    if(!node.children || node.children.length===0){
+      node._subWidth = Math.max(node.w + SUBTREE_PAD_X, MIN_W) + SIBLING_GAP_X; // leaf width
+      node._leaves = 1;
+      return node._subWidth;
+    }
+    let sum = 0;
+    for(const c of node.children){
+      sum += measureSubtree(c);
+    }
+    node._leaves = node.children.reduce((a,c)=>a+c._leaves,0);
+    // Make parent at least as wide as its box
+    node._subWidth = Math.max(sum, (node.w + SUBTREE_PAD_X) + SIBLING_GAP_X);
+    return node._subWidth;
+  }
+
+  function placeSubtree(node, leftX, topY){
+    // Node x is centered over its children span (or over its own width if leaf)
+    let childrenSpanLeft = leftX;
+    if(node.children && node.children.length){
+      for(const c of node.children){
+        placeSubtree(c, childrenSpanLeft, topY + node.h + LEVEL_GAP_Y);
+        childrenSpanLeft += c._subWidth;
+      }
+      // center node over children block
+      const first = node.children[0];
+      const last  = node.children[node.children.length-1];
+      const left  = first.x;
+      const right = last.x + last.w;
+      node.x = (left + right)/2 - node.w/2;
+      node.y = topY;
+    }else{
+      // leaf
+      node.x = leftX + (node._subWidth/2) - node.w/2;
+      node.y = topY;
+    }
+  }
+
+  function layoutAndRedraw(){
+    // Ensure sizes are up to date
+    nodes.forEach(autosizeNode);
+
+    const {map, roots} = buildHierarchy();
+
+    if(roots.length===0){
+      redraw(); return;
+    }
+    // If multiple roots, arrange them side-by-side and center them as a group.
+    let xCursor = 0;
+    let topY = 0;
+    for(const r of roots){
+      measureSubtree(r);
+      placeSubtree(r, xCursor, topY);
+      xCursor += r._subWidth + SIBLING_GAP_X;
+    }
+
+    // Sync computed positions back to nodes[]
+    for(const n of nodes){
+      const m = map.get(n.id);
+      if(m){ n.x = m.x; n.y = m.y; }
+    }
+
+    // Draw all
+    nodes.forEach(drawNode);
+    edges.forEach(drawEdge);
+
+    // Center the whole arrangement by viewBox fit
+    fitViewBoxToContent();
+    persist();
+  }
+
+  // ---------- Stage & toolbar ----------
+  stage.addEventListener('click',(e)=>{ if(e.target===stage) clearSelection(); });
   btnConnect.addEventListener('click', ()=>{
     isConnecting = !isConnecting;
     connectAnchor = isConnecting ? selectedId : null;
-    highlightConnecting(isConnecting, connectAnchor);
+    highlightConnecting(isConnecting);
   });
 
-  // Toolbar hooks
   btnAddParent.addEventListener('click', ()=>{
-    // place in the center of current viewBox
-    const vb = stage.viewBox.baseVal;
-    const n = addNode({ x: vb.x + vb.width/2 - MIN_W/2, y: vb.y + vb.height/2 - MIN_H/2, type:'parent' });
-    editNode(n); // encourage immediate naming
+    const n = addNode({text:'Topic',type:'parent'});
+    if(autoLayout){ layoutAndRedraw(); } else { drawNode(n); fitViewBoxToContent(); }
+    editNode(n);
   });
+
   btnAddChild.addEventListener('click', ()=>{
     if(!selectedId) return;
     const c = addSubtopic(selectedId);
+    if(autoLayout){ layoutAndRedraw(); } else { drawNode(c); addEdge(findNode(selectedId).id,c.id); redraw(); }
     editNode(c);
   });
+
   btnZoomFit.addEventListener('click', ()=> fitViewBoxToContent(80));
-  btnReset.addEventListener('click', ()=>{
-    if(confirm('Clear the map?')) removeAll();
-  });
-
+  btnReset.addEventListener('click', ()=>{ if(confirm('Clear the map?')) removeAll(); });
   btnExport.addEventListener('click', exportJSON);
-  fileImport.addEventListener('change', (e)=>{
-    const f = e.target.files?.[0]; if(f) importJSON(f);
-    fileImport.value = '';
+  fileImport.addEventListener('change',(e)=>{ const f=e.target.files?.[0]; if(f) importJSON(f); e.target.value=''; });
+
+  btnAutoLayout.addEventListener('click', ()=>{
+    autoLayout = !autoLayout;
+    if(autoLayout) layoutAndRedraw(); else redraw();
+    updateButtons(); persist();
   });
 
-  // Recompute viewBox on resize (keeps “fit” feel on orientation changes)
   window.addEventListener('resize', ()=> fitViewBoxToContent());
 
-  /* ===============================
-     Init
-  =================================*/
+  // ---------- Init ----------
   restore();
   if(nodes.length===0){
-    const root = addNode({text:'Main Topic', x:0, y:0, type:'parent'});
+    const root = addNode({text:'Main Topic',type:'parent'});
     addSubtopic(root.id);
+    layoutAndRedraw();
   }else{
-    // Draw existing
-    nodes.forEach(drawNode);
-    edges.forEach(drawEdge);
-    fitViewBoxToContent();
+    nodes.forEach(autosizeNode);
+    if(autoLayout) layoutAndRedraw(); else { nodes.forEach(drawNode); edges.forEach(drawEdge); fitViewBoxToContent(); }
   }
-
 })();
 </script>
 </body>
