@@ -1,8 +1,8 @@
-name: Build & Deploy Pages (tools)
+name: Build & Deploy Pages (root index for project repo)
 
 on:
-  push:                    # runs on any push to any branch
-  workflow_dispatch: {}    # allows manual run
+  push:                  # run on any push to this repo
+  workflow_dispatch: {}  # allow manual runs
 
 permissions:
   contents: read
@@ -10,7 +10,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: false
 
 jobs:
@@ -19,59 +19,60 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Create clean _site and copy the repo into it
-      - name: Prepare _site
+      - name: Prepare _site (copy repo)
         run: |
           rm -rf _site
           mkdir -p _site
           shopt -s dotglob
           cp -r * _site || true
 
-      # Generate /tools/index.html and a root redirect, no edits required
-      - name: Generate tools index
+      - name: Generate root index.html (buttons)
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
 
-            // Ensure folders exist in artifact
+            // Detect base path automatically:
+            // - user/org site repo ends with .github.io -> base = ''
+            // - project repo (like 'tools')          -> base = '/<repo>'
+            const repo = process.env.GITHUB_REPOSITORY.split('/')[1];
+            const isUserSite = /\.github\.io$/i.test(repo);
+            const base = isUserSite ? '' : `/${repo}`;
+
             const siteRoot = '_site';
-            const toolsDir = path.join(siteRoot, 'tools');
-            if (!fs.existsSync(siteRoot)) fs.mkdirSync(siteRoot, { recursive: true });
-            if (!fs.existsSync(toolsDir)) fs.mkdirSync(toolsDir, { recursive: true });
 
-            // Read direct entries under _site/tools
-            const entries = fs.readdirSync(toolsDir, { withFileTypes: true });
+            // Read root entries from the artifact
+            const entries = fs.readdirSync(siteRoot, { withFileTypes: true })
+              // ignore CI folders
+              .filter(e => !['.github','_site','node_modules'].includes(e.name));
 
-            // Direct .html/.htm files (excluding index.html)
+            // Direct .html/.htm files (exclude index.html)
             const direct = entries
               .filter(e => e.isFile() && /\.html?$/i.test(e.name) && !/^index\.html?$/i.test(e.name))
               .map(e => e.name);
 
-            // One-level subfolders with index.html/htm
+            // One-level subfolders that contain an index.html/htm
             const subidx = entries
               .filter(e => e.isDirectory())
               .map(d => {
-                const p1 = path.join(toolsDir, d.name, 'index.html');
-                const p2 = path.join(toolsDir, d.name, 'index.htm');
+                const p1 = path.join(siteRoot, d.name, 'index.html');
+                const p2 = path.join(siteRoot, d.name, 'index.htm');
                 return (fs.existsSync(p1) || fs.existsSync(p2)) ? d.name : null;
               })
               .filter(Boolean);
 
-            // Pretty button helpers (deterministic color per name)
-            const label = s => s.replace(/\.html?$/i, '');
-            const hue = s => { let h=2166136261>>>0; for (const ch of s) { h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0 } return h%360; };
+            // Visuals
+            const label = s => s.replace(/\.html?$/i,'');
+            const hue = s => { let h=2166136261>>>0; for(const ch of s){ h^=ch.charCodeAt(0); h=Math.imul(h,16777619)>>>0 } return h%360; };
             const grad = k => { const h=hue(k), h2=(h+24)%360; return `linear-gradient(180deg, hsl(${h} 75% 46%), hsl(${h2} 78% 44%))`; };
-            const btn  = (href, text, key) => `<a class="tool" href="${href}" target="_blank" rel="noopener" style="background:${grad(key)}">${text} ✨</a>`;
+            const btn  = (href,text,key)=>`<a class="tool" href="${href}" target="_blank" rel="noopener" style="background:${grad(key)}">${text} ✨</a>`;
 
-            // Build buttons (keep simple alpha order)
             const buttons = [
-              ...direct.sort((a,b)=>a.localeCompare(b)).map(f => btn(`/tools/${encodeURIComponent(f)}`, label(f), f)),
-              ...subidx.sort((a,b)=>a.localeCompare(b)).map(d => btn(`/tools/${encodeURIComponent(d)}/`, d, d)),
+              ...direct.sort((a,b)=>a.localeCompare(b)).map(f => btn(`${base}/${encodeURIComponent(f)}`, label(f), f)),
+              ...subidx.sort((a,b)=>a.localeCompare(b)).map(d => btn(`${base}/${encodeURIComponent(d)}/`, d, d)),
             ];
 
-            // Minimal, sleek HTML
             const updated = new Date().toISOString().replace(/\.\d{3}Z$/,'Z');
             const html = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
             <title>tools</title><meta name="color-scheme" content="light dark">
@@ -91,13 +92,9 @@ jobs:
               <div class="tiny">Last updated: ${updated} • ${buttons.length} link(s)</div>
             </div>`;
 
-            fs.writeFileSync(path.join(toolsDir, 'index.html'), html);
-
-            // Optional: root redirect to /tools/
-            const rootRedirect = `<!doctype html><meta charset="utf-8">
-            <meta http-equiv="refresh" content="0; url=/tools/">
-            <script>location.replace("/tools/"+location.search+location.hash);</script>`;
-            fs.writeFileSync(path.join(siteRoot, 'index.html'), rootRedirect);
+            // Write index at site root so https://spekit-jit.github.io/tools/ shows the buttons
+            fs.writeFileSync(path.join(siteRoot, 'index.html'), html);
+            core.info(`Root index generated with ${buttons.length} link(s). Base path: '${base}'`);
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
